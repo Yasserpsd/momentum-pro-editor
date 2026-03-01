@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Momentum Pro Editor
  * Description: Elementor widget that parses HTML code and provides visual controls for easy editing
- * Version: 2.0.0
+ * Version: 2.1.0
  * Author: Yasser Momentum
  * Author URI: https://momentummix.com/
  * License: GPL v3
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'MOMENTUM_PRO_VERSION', '2.0.0' );
+define( 'MOMENTUM_PRO_VERSION', '2.1.0' );
 define( 'MOMENTUM_PRO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MOMENTUM_PRO_URL', plugin_dir_url( __FILE__ ) );
 
@@ -46,10 +46,10 @@ final class Momentum_Pro_Editor {
         // Editor panel scripts
         add_action( 'elementor/editor/before_enqueue_scripts', [ $this, 'editor_scripts' ] );
 
-        // Preview iframe scripts - this is where inline editing happens
+        // Preview iframe scripts
         add_action( 'elementor/preview/enqueue_scripts', [ $this, 'preview_scripts' ] );
 
-        // Frontend - only CSS, no JS
+        // Frontend styles only
         add_action( 'elementor/frontend/after_enqueue_styles', [ $this, 'frontend_styles' ] );
     }
 
@@ -70,20 +70,47 @@ final class Momentum_Pro_Editor {
     }
 
     public function editor_scripts() {
-        wp_enqueue_style( 'momentum-editor-css', MOMENTUM_PRO_URL . 'assets/css/editor-style.css', [], MOMENTUM_PRO_VERSION );
-        wp_enqueue_script( 'momentum-editor-js', MOMENTUM_PRO_URL . 'assets/js/editor-controls.js', [ 'jquery', 'elementor-editor' ], MOMENTUM_PRO_VERSION, true );
+        wp_enqueue_style(
+            'momentum-editor-css',
+            MOMENTUM_PRO_URL . 'assets/css/editor-style.css',
+            [],
+            MOMENTUM_PRO_VERSION
+        );
+        wp_enqueue_script(
+            'momentum-editor-js',
+            MOMENTUM_PRO_URL . 'assets/js/editor-controls.js',
+            [ 'jquery', 'elementor-editor' ],
+            MOMENTUM_PRO_VERSION,
+            true
+        );
     }
 
     public function preview_scripts() {
-        wp_enqueue_style( 'momentum-preview-css', MOMENTUM_PRO_URL . 'assets/css/preview-style.css', [], MOMENTUM_PRO_VERSION );
-        wp_enqueue_script( 'momentum-preview-js', MOMENTUM_PRO_URL . 'assets/js/parser.js', [ 'jquery' ], MOMENTUM_PRO_VERSION, true );
+        wp_enqueue_style(
+            'momentum-preview-css',
+            MOMENTUM_PRO_URL . 'assets/css/preview-style.css',
+            [],
+            MOMENTUM_PRO_VERSION
+        );
+        wp_enqueue_script(
+            'momentum-preview-js',
+            MOMENTUM_PRO_URL . 'assets/js/parser.js',
+            [ 'jquery' ],
+            MOMENTUM_PRO_VERSION,
+            true
+        );
 
-        // Pass wp.media to preview
+        // Media library for image replacement
         wp_enqueue_media();
     }
 
     public function frontend_styles() {
-        wp_enqueue_style( 'momentum-frontend-css', MOMENTUM_PRO_URL . 'assets/css/frontend-style.css', [], MOMENTUM_PRO_VERSION );
+        wp_enqueue_style(
+            'momentum-frontend-css',
+            MOMENTUM_PRO_URL . 'assets/css/frontend-style.css',
+            [],
+            MOMENTUM_PRO_VERSION
+        );
     }
 }
 
