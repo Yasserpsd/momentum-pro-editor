@@ -1,29 +1,20 @@
 (function($) {
     'use strict';
 
-    /**
-     * Momentum Pro Editor v3.0 - Full Inline Editor
-     * Runs inside the Elementor preview iframe
-     */
-
     var M = {
-
         mods: {},
         history: {},
         histIdx: {},
         maxH: 50,
         ready: false,
 
-        // ============================================
-        // INIT
-        // ============================================
         init: function() {
             if (this.ready) return;
             if (!$('body').hasClass('elementor-editor-active')) return;
             this.ready = true;
             this.setup();
             this.watch();
-            console.log('Momentum v3.0: Active');
+            console.log('Momentum v3.1: Active');
         },
 
         setup: function() {
@@ -32,13 +23,10 @@
                 var $w = $(this);
                 if ($w.data('m3')) return;
                 $w.data('m3', true);
-
                 var wid = $w.data('widget-id');
                 if (!wid) return;
-
                 if (!self.mods[wid]) self.mods[wid] = { texts: {}, images: {}, links: {}, boxes: {} };
                 if (!self.history[wid]) { self.history[wid] = []; self.histIdx[wid] = -1; }
-
                 self.scanTexts($w, wid);
                 self.scanImages($w, wid);
                 self.scanLinks($w, wid);
@@ -48,61 +36,38 @@
             });
         },
 
-        // ============================================
-        // DEEP TEXT SCAN - finds ALL text elements
-        // ============================================
         scanTexts: function($w, wid) {
             var self = this;
-
-            // Get ALL elements that could contain text
             $w.find('*').each(function() {
                 var el = this;
                 var $el = $(this);
-
-                // Skip already processed
                 if ($el.data('m-t3')) return;
-
-                // Skip non-text elements
-                var tag = el.tagName.toLowerCase();
-                var skipTags = ['script', 'style', 'svg', 'path', 'circle', 'rect', 'line', 'polygon',
-                    'polyline', 'ellipse', 'g', 'defs', 'clippath', 'use', 'symbol',
-                    'br', 'hr', 'img', 'input', 'select', 'textarea', 'video', 'audio',
-                    'canvas', 'iframe', 'object', 'embed', 'noscript', 'template'];
-                if (skipTags.indexOf(tag) !== -1) return;
-
-                // Skip momentum UI elements
+                var tag = (el.tagName || '').toLowerCase();
+                if (!tag) return;
+                var skip = ['script','style','svg','path','circle','rect','line','polygon','polyline','ellipse','g','defs','clippath','use','symbol','br','hr','img','input','select','textarea','video','audio','canvas','iframe','object','embed','noscript','template'];
+                if (skip.indexOf(tag) !== -1) return;
                 if ($el.hasClass('m-badge') || $el.closest('#m-toolbar, #m-link-editor, .m-img-bar, .m-box-bar').length) return;
-
-                // Skip icon elements
                 if (self.isIcon(el)) return;
 
-                // Check if element has DIRECT text content
-                var hasDirectText = false;
-                var directText = '';
+                var hasText = false;
+                var txt = '';
                 for (var i = 0; i < el.childNodes.length; i++) {
-                    var node = el.childNodes[i];
-                    if (node.nodeType === 3 && node.textContent.trim().length > 0) {
-                        hasDirectText = true;
-                        directText += node.textContent.trim();
+                    if (el.childNodes[i].nodeType === 3 && el.childNodes[i].textContent.trim().length > 0) {
+                        hasText = true;
+                        txt += el.childNodes[i].textContent.trim();
                     }
                 }
-
-                if (!hasDirectText) return;
-                if (directText.length === 0) return;
-
-                // Skip if text is only 1-2 chars and likely an icon
-                if (directText.length <= 2 && $el.find('svg, i[class], [class*="icon"]').length > 0) return;
+                if (!hasText || txt.length === 0) return;
+                if (txt.length <= 2 && $el.find('svg, i[class], [class*="icon"]').length > 0) return;
 
                 $el.data('m-t3', true);
                 $el.attr('contenteditable', 'true');
                 $el.css({ 'cursor': 'text', 'outline': 'none' });
 
-                // Prevent link clicks
                 if (tag === 'a') {
                     $el.on('click.m', function(e) { e.preventDefault(); });
                 }
 
-                // Hover
                 $el.on('mouseenter.m', function(e) {
                     e.stopPropagation();
                     if (!$(this).is(':focus')) {
@@ -114,21 +79,18 @@
                     }
                 });
 
-                // Focus
                 $el.on('focus.m', function(e) {
                     e.stopPropagation();
                     $(this).css({ 'outline': '2px solid #6C63FF', 'outline-offset': '3px' });
-                    self.showTextToolbar($(this), wid);
+                    self.showToolbar($(this), wid);
                 });
 
-                // Blur
                 $el.on('blur.m', function() {
                     $(this).css('outline', 'none');
                     self.saveText($(this), wid);
                     setTimeout(function() { self.maybeHide(); }, 300);
                 });
 
-                // Input
                 $el.on('input.m', function() {
                     self.saveText($(this), wid);
                 });
@@ -137,52 +99,41 @@
 
         isIcon: function(el) {
             var $el = $(el);
-            var tag = el.tagName.toLowerCase();
-
+            var tag = (el.tagName || '').toLowerCase();
             if (tag === 'svg' || tag === 'i') {
-                var text = $el.text().trim();
-                if (text.length <= 1) return true;
+                if ($el.text().trim().length <= 1) return true;
             }
-
             if ($el.find('svg').length > 0 && $el.children().length > 0) {
-                var textOnly = '';
+                var t = '';
                 for (var i = 0; i < el.childNodes.length; i++) {
-                    if (el.childNodes[i].nodeType === 3) textOnly += el.childNodes[i].textContent.trim();
+                    if (el.childNodes[i].nodeType === 3) t += el.childNodes[i].textContent.trim();
                 }
-                if (textOnly.length <= 2) return true;
+                if (t.length <= 2) return true;
             }
-
             var cls = (el.className || '').toString();
             if (/\b(fa|fas|far|fab|fal|fad|dashicons|eicon|ti-|glyphicon|material-icons|icon)\b/i.test(cls)) return true;
-
             return false;
         },
 
         saveText: function($el, wid) {
             var key = this.getKey($el, wid);
             if (!this.mods[wid].texts[key]) this.mods[wid].texts[key] = {};
-
-            var text = '';
+            var t = '';
             for (var i = 0; i < $el[0].childNodes.length; i++) {
-                if ($el[0].childNodes[i].nodeType === 3) text += $el[0].childNodes[i].textContent;
+                if ($el[0].childNodes[i].nodeType === 3) t += $el[0].childNodes[i].textContent;
             }
-            this.mods[wid].texts[key].text = text.trim() || $el.text().trim();
+            this.mods[wid].texts[key].text = t.trim() || $el.text().trim();
             this.pushH(wid);
             this.save(wid);
         },
 
-        // ============================================
-        // TEXT TOOLBAR (Enhanced)
-        // ============================================
-        showTextToolbar: function($el, wid) {
+        showToolbar: function($el, wid) {
             var self = this;
             this.hideAll();
-
             var off = $el.offset();
             var $bar = this.createBar(off, $el);
 
-            // --- BOLD ---
-            var $b = this.btn('B', 'عريض', this.isBold($el)).css('font-weight', 'bold');
+            var $b = this.btn('B', 'Bold', this.isBold($el)).css('font-weight', 'bold');
             $b.on('mousedown', function(e) {
                 e.preventDefault();
                 var on = self.isBold($el);
@@ -191,8 +142,7 @@
                 self.saveSty($el, wid, 'fontWeight', on ? 'normal' : 'bold');
             });
 
-            // --- ITALIC ---
-            var $i = this.btn('I', 'مائل', $el.css('font-style') === 'italic').css('font-style', 'italic');
+            var $i = this.btn('I', 'Italic', $el.css('font-style') === 'italic').css('font-style', 'italic');
             $i.on('mousedown', function(e) {
                 e.preventDefault();
                 var on = $el.css('font-style') === 'italic';
@@ -201,8 +151,7 @@
                 self.saveSty($el, wid, 'fontStyle', on ? 'normal' : 'italic');
             });
 
-            // --- UNDERLINE ---
-            var $u = this.btn('U', 'تحته خط', $el.css('text-decoration').indexOf('underline') !== -1).css('text-decoration', 'underline');
+            var $u = this.btn('U', 'Underline', $el.css('text-decoration').indexOf('underline') !== -1).css('text-decoration', 'underline');
             $u.on('mousedown', function(e) {
                 e.preventDefault();
                 var on = $el.css('text-decoration').indexOf('underline') !== -1;
@@ -211,11 +160,10 @@
                 self.saveSty($el, wid, 'textDecoration', on ? 'none' : 'underline');
             });
 
-            // --- ALIGN ---
             var al = $el.css('text-align') || 'right';
-            var $aR = this.btn('⫷', 'يمين', al === 'right' || al === 'start').attr('data-al', 'right');
-            var $aC = this.btn('≡', 'وسط', al === 'center').attr('data-al', 'center');
-            var $aL = this.btn('⫸', 'شمال', al === 'left' || al === 'end').attr('data-al', 'left');
+            var $aR = this.btn('\u2B77', 'Right', al === 'right' || al === 'start').attr('data-al', 'right');
+            var $aC = this.btn('\u2261', 'Center', al === 'center').attr('data-al', 'center');
+            var $aL = this.btn('\u2B78', 'Left', al === 'left' || al === 'end').attr('data-al', 'left');
 
             [$aR, $aC, $aL].forEach(function($btn) {
                 $btn.on('mousedown', function(e) {
@@ -228,12 +176,10 @@
                 });
             });
 
-            // --- FONT SIZE ---
             var sz = parseInt($el.css('font-size')) || 16;
-            var $szD = this.btn('−', 'تصغير');
-            var $szL = $('<span>').css({ color: '#fff', fontSize: '11px', minWidth: '36px', textAlign: 'center', userSelect: 'none' }).text(sz + 'px');
-            var $szU = this.btn('+', 'تكبير');
-
+            var $szD = this.btn('\u2212', 'Smaller');
+            var $szL = $('<span>').css({ color: '#fff', fontSize: '11px', minWidth: '36px', textAlign: 'center', userSelect: 'none', display: 'inline-block' }).text(sz + 'px');
+            var $szU = this.btn('+', 'Bigger');
             $szD.on('mousedown', function(e) {
                 e.preventDefault();
                 sz = Math.max(6, sz - 1);
@@ -249,13 +195,11 @@
                 self.saveSty($el, wid, 'fontSize', sz + 'px');
             });
 
-            // --- LINE HEIGHT ---
             var lh = parseFloat($el.css('line-height')) / (parseInt($el.css('font-size')) || 16);
             lh = Math.round(lh * 10) / 10 || 1.5;
-            var $lhD = this.btn('↕−', 'تقليل');
-            var $lhL = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '26px', textAlign: 'center' }).text(lh.toFixed(1));
-            var $lhU = this.btn('↕+', 'زيادة');
-
+            var $lhD = this.btn('\u2195\u2212', 'Line-');
+            var $lhL = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '26px', textAlign: 'center', display: 'inline-block' }).text(lh.toFixed(1));
+            var $lhU = this.btn('\u2195+', 'Line+');
             $lhD.on('mousedown', function(e) {
                 e.preventDefault();
                 lh = Math.max(0.5, Math.round((lh - 0.1) * 10) / 10);
@@ -271,51 +215,34 @@
                 self.saveSty($el, wid, 'lineHeight', String(lh));
             });
 
-            // --- COLORS ---
-            var $clr = this.colorPick($el, 'color', 'لون النص', wid);
-            var $bg = this.colorPick($el, 'background-color', 'لون الخلفية', wid);
+            var $clr = this.colorPick($el, 'color', 'Text Color', wid);
+            var $bg = this.colorPick($el, 'background-color', 'BG Color', wid);
 
-            // --- LINK BUTTON ---
-            var $link = this.btn('🔗', 'إضافة/تعديل رابط');
+            var $link = this.btn('\uD83D\uDD17', 'Link');
             $link.on('mousedown', function(e) {
                 e.preventDefault();
-                if ($el.is('a')) {
-                    self.showLinkEditor($el, wid);
-                } else {
-                    self.wrapWithLink($el, wid);
-                }
+                self.showLinkPopup($el, wid);
             });
 
-            // --- UNDO / REDO ---
-            var $undo = this.btn('↩', 'تراجع');
+            var $undo = this.btn('\u21A9', 'Undo');
             $undo.on('mousedown', function(e) { e.preventDefault(); self.undo(wid); });
-            var $redo = this.btn('↪', 'إعادة');
+            var $redo = this.btn('\u21AA', 'Redo');
             $redo.on('mousedown', function(e) { e.preventDefault(); self.redo(wid); });
 
-            // Build toolbar
             var s = function() { return self.sep(); };
             $bar.append($b, $i, $u, s(), $aR, $aC, $aL, s(), $szD, $szL, $szU, s(), $lhD, $lhL, $lhU, s(), $clr, $bg, s(), $link, s(), $undo, $redo);
-
             $('body').append($bar);
             this.fixPos($bar, off, $el);
         },
 
-        // Wrap text/element with a link
-        wrapWithLink: function($el, wid) {
-            var self = this;
-            var sel = window.getSelection();
-            var selectedText = sel.toString().trim();
-
-            // Show link editor popup
-            this.showNewLinkEditor($el, wid, selectedText);
-        },
-
-        showNewLinkEditor: function($el, wid, selectedText) {
+        showLinkPopup: function($el, wid) {
             var self = this;
             $('#m-link-editor').remove();
-
             var off = $el.offset();
             var is = 'width:100%;padding:8px 12px;border:1px solid #333;border-radius:6px;background:#2a2a3e;color:#fff;font-size:13px;margin-top:4px;box-sizing:border-box;outline:none;';
+            var href = $el.is('a') ? ($el.attr('href') || '') : '';
+            var txt = $el.text().trim();
+            var blank = $el.is('a') ? ($el.attr('target') === '_blank') : false;
 
             var $ed = $('<div id="m-link-editor">').css({
                 position: 'absolute', zIndex: 999999,
@@ -325,20 +252,17 @@
                 boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                 border: '1px solid rgba(108,99,255,0.3)',
                 width: '300px', fontFamily: 'sans-serif'
-            });
-
-            $ed.on('mousedown', function(e) { e.stopPropagation(); });
-
-            var defaultText = selectedText || $el.text().trim();
+            }).on('mousedown', function(e) { e.stopPropagation(); });
 
             $ed.html(
-                '<div style="color:#6C63FF;font-weight:700;font-size:14px;margin-bottom:12px;">🔗 إضافة رابط</div>' +
-                '<label style="color:#aaa;font-size:11px;display:block;margin-bottom:10px;">URL<input type="url" id="ml-url" placeholder="https://example.com" style="' + is + '"></label>' +
-                '<label style="color:#aaa;font-size:11px;display:block;margin-bottom:10px;">النص<input type="text" id="ml-txt" value="' + defaultText + '" style="' + is + '"></label>' +
-                '<label style="color:#aaa;font-size:11px;display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="ml-blank"> فتح في تاب جديد</label>' +
+                '<div style="color:#6C63FF;font-weight:700;font-size:14px;margin-bottom:12px;">\uD83D\uDD17 Link Editor</div>' +
+                '<label style="color:#aaa;font-size:11px;display:block;margin-bottom:10px;">URL<input type="url" id="ml-url" value="' + href + '" placeholder="https://example.com" style="' + is + '"></label>' +
+                '<label style="color:#aaa;font-size:11px;display:block;margin-bottom:10px;">Text<input type="text" id="ml-txt" value="' + txt.replace(/"/g, '&quot;') + '" style="' + is + '"></label>' +
+                '<label style="color:#aaa;font-size:11px;display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="ml-blank" ' + (blank ? 'checked' : '') + '> Open in new tab</label>' +
                 '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
-                '<button id="ml-x" style="padding:7px 14px;border:none;border-radius:6px;background:#333;color:#fff;cursor:pointer;">إلغاء</button>' +
-                '<button id="ml-ok" style="padding:7px 14px;border:none;border-radius:6px;background:#6C63FF;color:#fff;cursor:pointer;font-weight:600;">💾 إضافة</button>' +
+                '<button id="ml-x" style="padding:7px 14px;border:none;border-radius:6px;background:#333;color:#fff;cursor:pointer;">Cancel</button>' +
+                ($el.is('a') ? '<button id="ml-del" style="padding:7px 14px;border:none;border-radius:6px;background:#e74c3c;color:#fff;cursor:pointer;">Remove</button>' : '') +
+                '<button id="ml-ok" style="padding:7px 14px;border:none;border-radius:6px;background:#6C63FF;color:#fff;cursor:pointer;font-weight:600;">Save</button>' +
                 '</div>'
             );
 
@@ -347,138 +271,67 @@
 
             $ed.find('#ml-ok').on('click', function() {
                 var url = $ed.find('#ml-url').val();
-                var txt = $ed.find('#ml-txt').val();
-                var blank = $ed.find('#ml-blank').is(':checked');
-
-                if (!url) { alert('اكتب URL الأول'); return; }
-
-                // If element is already a link, just update it
+                var t = $ed.find('#ml-txt').val();
+                var bl = $ed.find('#ml-blank').is(':checked');
+                if (!url) { alert('Please enter a URL'); return; }
                 if ($el.is('a')) {
                     $el.attr('href', url);
-                    if (txt) $el.text(txt);
-                    if (blank) $el.attr('target', '_blank').attr('rel', 'noopener noreferrer');
+                    if (t) $el.text(t);
+                    if (bl) { $el.attr('target', '_blank').attr('rel', 'noopener noreferrer'); } else { $el.removeAttr('target').removeAttr('rel'); }
                 } else {
-                    // Wrap element content with <a>
-                    var $a = $('<a>').attr('href', url).text(txt || $el.text());
-                    if (blank) $a.attr('target', '_blank').attr('rel', 'noopener noreferrer');
-                    $a.css({ color: $el.css('color'), textDecoration: 'underline' });
+                    var $a = $('<a>').attr('href', url).text(t || $el.text()).css({ color: $el.css('color'), textDecoration: 'underline' });
+                    if (bl) $a.attr('target', '_blank').attr('rel', 'noopener noreferrer');
                     $el.empty().append($a);
-
-                    // Make the new link editable
-                    $a.attr('contenteditable', 'true');
-                    $a.on('click.m', function(e) { e.preventDefault(); });
                 }
-
                 self.pushH(wid);
                 self.save(wid);
                 $ed.remove();
-                self.notify('✅ تم إضافة الرابط');
+                self.notify('Link saved');
             });
+
+            if ($el.is('a')) {
+                $ed.find('#ml-del').on('click', function() {
+                    var t2 = $el.text();
+                    $el.replaceWith(t2);
+                    self.pushH(wid);
+                    self.save(wid);
+                    $ed.remove();
+                });
+            }
 
             $ed.find('#ml-x').on('click', function() { $ed.remove(); });
         },
 
-        // ============================================
-        // LINK EDITOR (for existing links)
-        // ============================================
         scanLinks: function($w, wid) {
             var self = this;
             $w.find('a').each(function() {
                 var $a = $(this);
                 if ($a.data('m-lk3')) return;
                 $a.data('m-lk3', true);
-
                 $a.on('dblclick.m', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    self.showLinkEditor($(this), wid);
+                    self.showLinkPopup($(this), wid);
                 });
             });
         },
 
-        showLinkEditor: function($a, wid) {
-            var self = this;
-            $('#m-link-editor').remove();
-
-            var off = $a.offset();
-            var is = 'width:100%;padding:8px 12px;border:1px solid #333;border-radius:6px;background:#2a2a3e;color:#fff;font-size:13px;margin-top:4px;box-sizing:border-box;outline:none;';
-
-            var $ed = $('<div id="m-link-editor">').css({
-                position: 'absolute', zIndex: 999999,
-                top: (off.top + $a.outerHeight() + 8) + 'px',
-                left: Math.max(10, off.left) + 'px',
-                background: '#1a1a2e', borderRadius: '12px', padding: '16px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-                border: '1px solid rgba(108,99,255,0.3)',
-                width: '300px', fontFamily: 'sans-serif'
-            });
-
-            $ed.on('mousedown', function(e) { e.stopPropagation(); });
-
-            $ed.html(
-                '<div style="color:#6C63FF;font-weight:700;font-size:14px;margin-bottom:12px;">🔗 تعديل الرابط</div>' +
-                '<label style="color:#aaa;font-size:11px;display:block;margin-bottom:10px;">URL<input type="url" id="ml-url" value="' + ($a.attr('href') || '') + '" style="' + is + '"></label>' +
-                '<label style="color:#aaa;font-size:11px;display:block;margin-bottom:10px;">النص<input type="text" id="ml-txt" value="' + $a.text().trim() + '" style="' + is + '"></label>' +
-                '<label style="color:#aaa;font-size:11px;display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="ml-blank" ' + ($a.attr('target') === '_blank' ? 'checked' : '') + '> فتح في تاب جديد</label>' +
-                '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
-                '<button id="ml-x" style="padding:7px 14px;border:none;border-radius:6px;background:#333;color:#fff;cursor:pointer;">إلغاء</button>' +
-                '<button id="ml-del" style="padding:7px 14px;border:none;border-radius:6px;background:#e74c3c;color:#fff;cursor:pointer;">🗑️ حذف</button>' +
-                '<button id="ml-ok" style="padding:7px 14px;border:none;border-radius:6px;background:#6C63FF;color:#fff;cursor:pointer;font-weight:600;">💾 حفظ</button>' +
-                '</div>'
-            );
-
-            $('body').append($ed);
-
-            $ed.find('#ml-ok').on('click', function() {
-                $a.attr('href', $ed.find('#ml-url').val());
-                var t = $ed.find('#ml-txt').val();
-                if (t) $a.text(t);
-                if ($ed.find('#ml-blank').is(':checked')) {
-                    $a.attr('target', '_blank').attr('rel', 'noopener noreferrer');
-                } else {
-                    $a.removeAttr('target').removeAttr('rel');
-                }
-                self.pushH(wid);
-                self.save(wid);
-                $ed.remove();
-            });
-
-            $ed.find('#ml-del').on('click', function() {
-                var txt = $a.text();
-                $a.replaceWith(txt);
-                self.pushH(wid);
-                self.save(wid);
-                $ed.remove();
-            });
-
-            $ed.find('#ml-x').on('click', function() { $ed.remove(); });
-        },
-
-        // ============================================
-        // BOX/CONTAINER CONTROLS
-        // ============================================
         scanBoxes: function($w, wid) {
             var self = this;
-
-            // Find all direct child containers
             $w.find('div, section, article, header, footer, ul, ol, table, blockquote, aside, nav, main').each(function() {
                 var $box = $(this);
                 if ($box.data('m-bx3')) return;
                 if ($box.hasClass('momentum-html-output')) return;
                 if ($box.closest('#m-toolbar, #m-link-editor, .m-img-bar, .m-box-bar').length) return;
-
                 $box.data('m-bx3', true);
 
-                // Right-click for box controls
                 $box.on('contextmenu.m', function(e) {
-                    // Only if right-clicked directly on this box (not a child)
                     if (e.target !== this && !$(e.target).is('div, section, article')) return;
                     e.preventDefault();
                     e.stopPropagation();
                     self.showBoxBar($(this), wid);
                 });
 
-                // Hover outline
                 $box.on('mouseenter.m', function(e) {
                     e.stopPropagation();
                     if (!$(this).data('m-bx-sel')) {
@@ -495,10 +348,9 @@
         showBoxBar: function($box, wid) {
             var self = this;
             this.hideAll();
-
+            $('.m-box-bar').remove();
             $box.data('m-bx-sel', true);
             $box.css({ 'outline': '2px solid #FF9800', 'outline-offset': '2px' });
-
             var off = $box.offset();
 
             var $bar = $('<div class="m-box-bar">').css({
@@ -511,126 +363,79 @@
                 border: '1px solid rgba(255,152,0,0.4)'
             }).on('mousedown', function(e) { e.preventDefault(); });
 
-            // Tag label
             var tag = $box.prop('tagName').toLowerCase();
-            var cls = $box.attr('class') || '';
-            var label = tag + (cls ? '.' + cls.split(' ')[0] : '');
-            if (label.length > 20) label = label.substring(0, 20) + '…';
-            var $label = $('<span>').css({ color: '#FF9800', fontSize: '11px', fontWeight: '600', padding: '0 6px', fontFamily: 'monospace' }).text(label);
+            var $label = $('<span>').css({ color: '#FF9800', fontSize: '11px', fontWeight: '600', padding: '0 6px', fontFamily: 'monospace' }).text(tag);
 
             var s = function() { return self.sep(); };
 
-            // Move UP
-            var $up = this.btn('⬆', 'نقل لفوق');
+            var $up = this.btn('\u2B06', 'Move Up');
             $up.on('mousedown', function(e) {
                 e.preventDefault();
                 var $prev = $box.prev();
                 if ($prev.length && !$prev.hasClass('m-badge')) {
                     $box.insertBefore($prev);
-                    self.pushH(wid);
-                    self.save(wid);
-                    self.notify('⬆ تم النقل لفوق');
+                    self.pushH(wid); self.save(wid);
+                    self.notify('Moved up');
                     self.showBoxBar($box, wid);
                 }
             });
 
-            // Move DOWN
-            var $down = this.btn('⬇', 'نقل لتحت');
+            var $down = this.btn('\u2B07', 'Move Down');
             $down.on('mousedown', function(e) {
                 e.preventDefault();
                 var $next = $box.next();
                 if ($next.length && !$next.hasClass('m-badge')) {
                     $box.insertAfter($next);
-                    self.pushH(wid);
-                    self.save(wid);
-                    self.notify('⬇ تم النقل لتحت');
+                    self.pushH(wid); self.save(wid);
+                    self.notify('Moved down');
                     self.showBoxBar($box, wid);
                 }
             });
 
-            // DUPLICATE
-            var $dup = this.btn('📋', 'نسخ');
+            var $dup = this.btn('\uD83D\uDCCB', 'Duplicate');
             $dup.on('mousedown', function(e) {
                 e.preventDefault();
                 var $clone = $box.clone(true);
                 $clone.removeData('m-bx3').removeData('m-bx-sel');
                 $clone.find('*').removeData();
                 $box.after($clone);
-
-                // Re-scan
                 setTimeout(function() {
-                    self.scanTexts($clone.closest('.momentum-html-output'), wid);
-                    self.scanImages($clone.closest('.momentum-html-output'), wid);
-                    self.scanBoxes($clone.closest('.momentum-html-output'), wid);
+                    var $w2 = $clone.closest('.momentum-html-output');
+                    self.scanTexts($w2, wid);
+                    self.scanImages($w2, wid);
+                    self.scanBoxes($w2, wid);
                 }, 100);
-
-                self.pushH(wid);
-                self.save(wid);
-                self.notify('📋 تم النسخ');
+                self.pushH(wid); self.save(wid);
+                self.notify('Duplicated');
             });
 
-            // DELETE
-            var $del = this.btn('🗑️', 'حذف');
+            var $del = this.btn('\uD83D\uDDD1', 'Delete');
             $del.css('background', '#5c1a1a');
             $del.on('mousedown', function(e) {
                 e.preventDefault();
-                if (confirm('متأكد إنك عايز تحذف البوكس ده؟')) {
+                if (confirm('Delete this box?')) {
                     $box.fadeOut(200, function() {
                         $(this).remove();
-                        self.pushH(wid);
-                        self.save(wid);
-                        self.notify('🗑️ تم الحذف');
+                        self.pushH(wid); self.save(wid);
+                        self.notify('Deleted');
                     });
                     self.hideAll();
+                    $('.m-box-bar').remove();
                 }
             });
 
-            // HIDE/SHOW
-            var isHidden = $box.data('m-hidden');
-            var $hide = this.btn(isHidden ? '👁️' : '🙈', isHidden ? 'إظهار' : 'إخفاء');
-            $hide.on('mousedown', function(e) {
-                e.preventDefault();
-                if ($box.data('m-hidden')) {
-                    $box.css('opacity', '1').removeData('m-hidden');
-                    $(this).text('🙈');
-                    self.notify('👁️ تم الإظهار');
-                } else {
-                    $box.css('opacity', '0.2').data('m-hidden', true);
-                    $(this).text('👁️');
-                    self.notify('🙈 تم الإخفاء');
-                }
-                self.pushH(wid);
-                self.save(wid);
-            });
-
-            // PADDING control
             var pad = parseInt($box.css('padding')) || 0;
-            var $padD = this.btn('P−', 'تقليل Padding');
-            var $padL = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '24px', textAlign: 'center' }).text(pad);
-            var $padU = this.btn('P+', 'زيادة Padding');
+            var $padD = this.btn('P-', 'Padding -');
+            var $padL = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '24px', textAlign: 'center', display: 'inline-block' }).text(pad);
+            var $padU = this.btn('P+', 'Padding +');
+            $padD.on('mousedown', function(e) { e.preventDefault(); pad = Math.max(0, pad - 5); $box.css('padding', pad + 'px'); $padL.text(pad); self.saveSty($box, wid, 'padding', pad + 'px'); });
+            $padU.on('mousedown', function(e) { e.preventDefault(); pad += 5; $box.css('padding', pad + 'px'); $padL.text(pad); self.saveSty($box, wid, 'padding', pad + 'px'); });
 
-            $padD.on('mousedown', function(e) {
-                e.preventDefault();
-                pad = Math.max(0, pad - 5);
-                $box.css('padding', pad + 'px');
-                $padL.text(pad);
-                self.saveSty($box, wid, 'padding', pad + 'px');
-            });
-            $padU.on('mousedown', function(e) {
-                e.preventDefault();
-                pad += 5;
-                $box.css('padding', pad + 'px');
-                $padL.text(pad);
-                self.saveSty($box, wid, 'padding', pad + 'px');
-            });
+            var $bgClr = this.colorPick($box, 'background-color', 'BG', wid);
 
-            // BG Color
-            var $bgClr = this.colorPick($box, 'background-color', 'لون خلفية البوكس', wid);
-
-            $bar.append($label, s(), $up, $down, s(), $dup, $del, $hide, s(), $padD, $padL, $padU, s(), $bgClr);
+            $bar.append($label, s(), $up, $down, s(), $dup, $del, s(), $padD, $padL, $padU, s(), $bgClr);
             $('body').append($bar);
 
-            // Click elsewhere to deselect
             $(document).on('click.mboxdesel', function(e) {
                 if (!$(e.target).closest('.m-box-bar').length && !$(e.target).is($box)) {
                     $box.removeData('m-bx-sel').css('outline', 'none');
@@ -640,9 +445,6 @@
             });
         },
 
-        // ============================================
-        // IMAGE EDITING
-        // ============================================
         scanImages: function($w, wid) {
             var self = this;
             $w.find('img').each(function(idx) {
@@ -650,7 +452,6 @@
                 if ($img.data('m-i3')) return;
                 $img.data('m-i3', true);
                 $img.data('m-idx', idx);
-
                 $img.css({ cursor: 'pointer', transition: 'outline 0.15s' });
 
                 $img.on('mouseenter.m', function() {
@@ -675,10 +476,8 @@
 
             $img.data('m-sel', true);
             $img.css({ 'outline': '3px solid #6C63FF', 'outline-offset': '3px' });
-
             var off = $img.offset(), w = $img.width(), h = $img.height();
 
-            // Resize handle
             var $rh = $('<div class="m-resize-h">').css({
                 position: 'absolute', width: '14px', height: '14px',
                 background: '#6C63FF', borderRadius: '3px', cursor: 'nwse-resize', zIndex: 999998,
@@ -697,7 +496,7 @@
                     $img.css({ width: nw + 'px', height: nh + 'px' }).attr({ width: nw, height: nh });
                     var no = $img.offset();
                     $rh.css({ top: (no.top + nh - 7) + 'px', left: (no.left + nw - 7) + 'px' });
-                    $('.m-img-bar .m-sz').text(nw + '×' + nh);
+                    $('.m-img-bar .m-sz').text(nw + 'x' + nh);
                 });
                 $(document).on('mouseup.mr', function() {
                     $(document).off('mousemove.mr mouseup.mr');
@@ -705,7 +504,6 @@
                 });
             });
 
-            // Image toolbar
             var $bar = $('<div class="m-img-bar">').css({
                 position: 'absolute', zIndex: 999999,
                 top: Math.max(5, off.top - 48) + 'px', left: Math.max(10, off.left) + 'px',
@@ -714,19 +512,15 @@
                 boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '1px solid rgba(108,99,255,0.3)'
             }).on('mousedown', function(e) { e.preventDefault(); });
 
-            var $rep = this.btn('📷', 'تغيير');
-            $rep.on('mousedown', function(e) {
-                e.preventDefault();
-                self.pickImg($img, wid);
-            });
+            var $rep = this.btn('\uD83D\uDDBC', 'Replace');
+            $rep.on('mousedown', function(e) { e.preventDefault(); self.pickImg($img, wid); });
 
-            var $sz = $('<span class="m-sz">').css({ color: '#aaa', fontSize: '11px', padding: '0 6px' }).text(Math.round(w) + '×' + Math.round(h));
+            var $sz = $('<span class="m-sz">').css({ color: '#aaa', fontSize: '11px', padding: '0 6px' }).text(Math.round(w) + 'x' + Math.round(h));
 
             var rad = parseInt($img.css('border-radius')) || 0;
-            var $rd = this.btn('◻', 'حاد');
-            var $rl = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '20px', textAlign: 'center' }).text(rad);
-            var $ru = this.btn('◯', 'دائري');
-
+            var $rd = this.btn('R-', 'Radius -');
+            var $rl = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '20px', textAlign: 'center', display: 'inline-block' }).text(rad);
+            var $ru = this.btn('R+', 'Radius +');
             $rd.on('mousedown', function(e) { e.preventDefault(); rad = Math.max(0, rad - 2); $img.css('border-radius', rad + 'px'); $rl.text(rad); self.saveImg($img, wid); });
             $ru.on('mousedown', function(e) { e.preventDefault(); rad += 2; $img.css('border-radius', rad + 'px'); $rl.text(rad); self.saveImg($img, wid); });
 
@@ -744,9 +538,8 @@
 
         pickImg: function($img, wid) {
             var self = this;
-            if (typeof wp === 'undefined' || !wp.media) { alert('مكتبة الوسائط مش متاحة'); return; }
-
-            var f = wp.media({ title: '📷 اختر صورة', button: { text: 'استخدم' }, multiple: false, library: { type: 'image' } });
+            if (typeof wp === 'undefined' || !wp.media) { alert('Media library not available'); return; }
+            var f = wp.media({ title: 'Select Image', button: { text: 'Use' }, multiple: false, library: { type: 'image' } });
             f.on('select', function() {
                 var a = f.state().get('selection').first().toJSON();
                 $img.attr('src', a.url);
@@ -758,7 +551,7 @@
 
         saveImg: function($img, wid) {
             var idx = $img.data('m-idx') || 0;
-            this.mods[wid].images = this.mods[wid].images || {};
+            if (!this.mods[wid].images) this.mods[wid].images = {};
             this.mods[wid].images[idx] = {
                 src: $img.attr('src'),
                 width: Math.round($img.width()),
@@ -769,11 +562,8 @@
             this.save(wid);
         },
 
-        // ============================================
-        // HELPERS
-        // ============================================
         createBar: function(off, $el) {
-            var $bar = $('<div id="m-toolbar">').css({
+            return $('<div id="m-toolbar">').css({
                 position: 'absolute', zIndex: 999999,
                 top: Math.max(5, off.top - 52) + 'px',
                 left: Math.max(10, off.left) + 'px',
@@ -785,7 +575,6 @@
             }).on('mousedown', function(e) {
                 if (!$(e.target).is('input')) e.preventDefault();
             });
-            return $bar;
         },
 
         fixPos: function($bar, off, $el) {
@@ -838,7 +627,7 @@
         },
 
         getKey: function($el, wid) {
-            var tag = $el.prop('tagName').toLowerCase();
+            var tag = ($el.prop('tagName') || 'div').toLowerCase();
             var $w = $el.closest('.momentum-html-output');
             return tag + ':' + $w.find(tag).index($el);
         },
@@ -862,9 +651,6 @@
             $('#m-toolbar, #m-link-editor').remove();
         },
 
-        // ============================================
-        // UNDO / REDO
-        // ============================================
         setupKeys: function(wid) {
             if ($(document).data('m-k3')) return;
             $(document).data('m-k3', true);
@@ -892,24 +678,21 @@
         },
 
         undo: function(wid) {
-            if (!this.history[wid] || this.histIdx[wid] <= 0) { this.notify('⚠️ مفيش تراجع'); return; }
+            if (!this.history[wid] || this.histIdx[wid] <= 0) { this.notify('Nothing to undo'); return; }
             this.histIdx[wid]--;
             this.mods[wid] = JSON.parse(JSON.stringify(this.history[wid][this.histIdx[wid]]));
             this.save(wid);
-            this.notify('↩ تراجع');
+            this.notify('Undo');
         },
 
         redo: function(wid) {
-            if (!this.history[wid] || this.histIdx[wid] >= this.history[wid].length - 1) { this.notify('⚠️ مفيش إعادة'); return; }
+            if (!this.history[wid] || this.histIdx[wid] >= this.history[wid].length - 1) { this.notify('Nothing to redo'); return; }
             this.histIdx[wid]++;
             this.mods[wid] = JSON.parse(JSON.stringify(this.history[wid][this.histIdx[wid]]));
             this.save(wid);
-            this.notify('↪ إعادة');
+            this.notify('Redo');
         },
 
-        // ============================================
-        // SAVE
-        // ============================================
         save: function(wid) {
             try {
                 window.parent.postMessage({ type: 'momentum-save', widgetId: wid, modifications: this.mods[wid] }, '*');
@@ -937,27 +720,35 @@
                         color: '#fff', padding: '5px 14px', borderRadius: '20px',
                         fontSize: '11px', fontFamily: 'sans-serif', zIndex: 9999,
                         pointerEvents: 'none', boxShadow: '0 2px 12px rgba(108,99,255,0.4)'
-                    }).html('✏️ <b>Momentum</b> — كليك يمين على أي بوكس للتحكم')
+                    }).html('Momentum Pro')
                 );
             }).on('mouseleave', function() { $(this).find('.m-badge').remove(); });
         },
 
         watch: function() {
             var self = this;
-            new MutationObserver(function(muts) {
+            var observer = new MutationObserver(function(muts) {
                 var found = false;
                 muts.forEach(function(m) {
                     $(m.addedNodes).each(function() {
-                        if ($(this).find('.momentum-html-output').length || $(this).hasClass('momentum-html-output')) found = true;
+                        if ($(this).hasClass('momentum-html-output') || $(this).find('.momentum-html-output').length) {
+                            found = true;
+                        }
                     });
                 });
-                if (found) setTimeout(function() { self.setup(); }, 500);
-            }).observe(document.body, { childList: true, subtree: true });
-            setInterval(function() { self.setup(); }, 4000);
+                if (found) {
+                    setTimeout(function() { self.setup(); }, 500);
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            setInterval(function() { self.setup(); }, 3000);
         }
     };
 
-    $(document).ready(function() { setTimeout(function() { M.init(); }, 800); });
-    window.MomentumPreview = M;
+    $(document).ready(function() {
+        setTimeout(function() { M.init(); }, 1000);
+        setTimeout(function() { M.init(); }, 3000);
+        setTimeout(function() { M.init(); }, 5000);
+    });
 
 })(jQuery);
