@@ -22,13 +22,13 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
     }
 
     public function get_keywords() {
-        return [ 'html', 'code', 'momentum', 'pro', 'editor', 'custom' ];
+        return [ 'html', 'code', 'momentum', 'pro', 'editor', 'custom', 'inline' ];
     }
 
     protected function register_controls() {
 
         // ============================================
-        // TAB: HTML CODE INPUT
+        // TAB: HTML CODE
         // ============================================
         $this->start_controls_section(
             'section_html_code',
@@ -41,45 +41,45 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'html_code',
             [
-                'label'       => esc_html__( 'ادخل كود HTML هنا', 'momentum-pro-editor' ),
+                'label'       => esc_html__( 'الكود', 'momentum-pro-editor' ),
                 'type'        => \Elementor\Controls_Manager::CODE,
                 'language'    => 'html',
                 'rows'        => 20,
-                'default'     => '<div style="padding:30px; text-align:center;">
-    <h1 style="color:#333; font-size:32px;">مرحباً بيك في Momentum Pro Editor</h1>
-    <p style="color:#666; font-size:18px;">اضغط على أي نص عشان تعدله مباشرة</p>
-    <img src="https://via.placeholder.com/600x300" alt="صورة تجريبية" width="600" height="300">
-    <p style="color:#999; font-size:14px;">جرّب تضغط على النص ده وتعدله!</p>
+                'default'     => '<div style="padding:40px; text-align:center;">
+    <h1 style="color:#333; font-size:36px; margin-bottom:15px;">مرحباً بيك في Momentum Pro Editor</h1>
+    <p style="color:#666; font-size:18px; margin-bottom:25px;">اضغط على أي نص عشان تعدله مباشرة - غيّر الألوان والخطوط والمسافات</p>
+    <a href="https://example.com" style="background:#6C63FF; color:#fff; padding:12px 30px; border-radius:8px; text-decoration:none; font-size:16px;">اضغط هنا</a>
+    <img src="https://via.placeholder.com/600x300/6C63FF/ffffff?text=Momentum+Pro" alt="صورة تجريبية" width="600" height="300" style="margin-top:25px; border-radius:12px;">
+    <p style="color:#999; font-size:14px; margin-top:20px;">اضغط مرتين على أي رابط عشان تعدله 🔗</p>
 </div>',
-                'description' => esc_html__( 'حط كود HTML وبعدين في الـ Preview اضغط على أي نص عشان تعدله مباشرة', 'momentum-pro-editor' ),
             ]
         );
 
         $this->add_control(
-            'enable_edit_notice',
+            'usage_guide',
             [
-                'type'            => \Elementor\Controls_Manager::RAW_HTML,
-                'raw'             => '<div style="background:linear-gradient(135deg,#6C63FF,#4CAF50);color:#fff;padding:15px;border-radius:8px;text-align:center;margin-top:10px;">
-                    <strong>💡 طريقة الاستخدام:</strong><br><br>
-                    1. حط كود HTML فوق ☝️<br>
-                    2. روح على الـ Preview واضغط على أي نص<br>
-                    3. عدّل النص مباشرة!<br>
-                    4. اضغط على أي صورة عشان تغيرها<br><br>
-                    <small>التعديلات بتتحفظ تلقائياً ✅</small>
+                'type' => \Elementor\Controls_Manager::RAW_HTML,
+                'raw'  => '<div style="background:linear-gradient(135deg,#6C63FF,#4CAF50);color:#fff;padding:16px;border-radius:10px;margin-top:10px;line-height:1.8;">
+                    <strong style="font-size:14px;">💡 طريقة الاستخدام:</strong><br>
+                    ✏️ اضغط على أي <strong>نص</strong> عشان تعدله مباشرة<br>
+                    🎨 غيّر <strong>الألوان والخطوط</strong> من الـ Toolbar<br>
+                    📷 اضغط على أي <strong>صورة</strong> عشان تغيرها أو تغيّر حجمها بالسحب<br>
+                    🔗 اضغط مرتين على أي <strong>رابط</strong> عشان تعدله<br>
+                    ↩️ <strong>Ctrl+Z</strong> للتراجع | <strong>Ctrl+Y</strong> للإعادة<br>
+                    <small style="opacity:0.8;">كل التعديلات بتتحفظ تلقائياً ✅</small>
                 </div>',
-                'content_classes' => 'momentum-usage-notice',
             ]
         );
 
         $this->end_controls_section();
 
         // ============================================
-        // TAB: SAVED MODIFICATIONS
+        // TAB: MODIFICATIONS STORAGE
         // ============================================
         $this->start_controls_section(
-            'section_modifications',
+            'section_mods',
             [
-                'label' => esc_html__( '💾 التعديلات المحفوظة', 'momentum-pro-editor' ),
+                'label' => esc_html__( '💾 التعديلات', 'momentum-pro-editor' ),
                 'tab'   => \Elementor\Controls_Manager::TAB_CONTENT,
             ]
         );
@@ -87,28 +87,27 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'saved_modifications',
             [
-                'label'   => esc_html__( 'بيانات التعديلات', 'momentum-pro-editor' ),
+                'label'   => '',
                 'type'    => \Elementor\Controls_Manager::HIDDEN,
                 'default' => '{}',
             ]
         );
 
         $this->add_control(
-            'modifications_display',
+            'mods_info',
             [
-                'type'            => \Elementor\Controls_Manager::RAW_HTML,
-                'raw'             => '<div style="background:#f5f5f5;padding:15px;border-radius:8px;text-align:center;color:#999;">
-                    <p>التعديلات بتتحفظ تلقائياً لما تعدل في الـ Preview</p>
-                    <button type="button" onclick="momentumResetModifications()" style="background:#e74c3c;color:#fff;padding:8px 16px;border:none;border-radius:5px;cursor:pointer;margin-top:10px;">🔄 إعادة تعيين كل التعديلات</button>
+                'type' => \Elementor\Controls_Manager::RAW_HTML,
+                'raw'  => '<div style="text-align:center;padding:15px;">
+                    <p style="color:#888;font-size:13px;margin-bottom:12px;">التعديلات بتتحفظ تلقائياً</p>
+                    <button type="button" onclick="momentumResetModifications()" style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(231,76,60,0.3);">🔄 إعادة تعيين كل التعديلات</button>
                 </div>',
-                'content_classes' => 'momentum-mods-info',
             ]
         );
 
         $this->end_controls_section();
 
         // ============================================
-        // TAB: SPACING
+        // STYLE: SPACING
         // ============================================
         $this->start_controls_section(
             'section_spacing',
@@ -143,7 +142,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         );
 
         $this->add_control(
-            'container_bg_color',
+            'container_bg',
             [
                 'label'     => esc_html__( 'لون الخلفية', 'momentum-pro-editor' ),
                 'type'      => \Elementor\Controls_Manager::COLOR,
@@ -153,13 +152,33 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             ]
         );
 
+        $this->add_control(
+            'container_radius',
+            [
+                'label'      => esc_html__( 'حواف دائرية', 'momentum-pro-editor' ),
+                'type'       => \Elementor\Controls_Manager::DIMENSIONS,
+                'size_units' => [ 'px', '%' ],
+                'selectors'  => [
+                    '{{WRAPPER}} .momentum-html-output' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Box_Shadow::get_type(),
+            [
+                'name'     => 'container_shadow',
+                'selector' => '{{WRAPPER}} .momentum-html-output',
+            ]
+        );
+
         $this->end_controls_section();
 
         // ============================================
-        // TAB: CUSTOM CSS
+        // STYLE: CUSTOM CSS
         // ============================================
         $this->start_controls_section(
-            'section_custom_css',
+            'section_css',
             [
                 'label' => esc_html__( '🎨 CSS إضافي', 'momentum-pro-editor' ),
                 'tab'   => \Elementor\Controls_Manager::TAB_STYLE,
@@ -169,7 +188,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'custom_css',
             [
-                'label'    => esc_html__( 'كود CSS', 'momentum-pro-editor' ),
+                'label'    => esc_html__( 'CSS', 'momentum-pro-editor' ),
                 'type'     => \Elementor\Controls_Manager::CODE,
                 'language' => 'css',
                 'rows'     => 10,
@@ -180,29 +199,31 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         $this->end_controls_section();
     }
 
+    // ============================================
+    // RENDER (Frontend & Editor)
+    // ============================================
     protected function render() {
         $settings   = $this->get_settings_for_display();
         $html_code  = $settings['html_code'] ?? '';
         $custom_css = $settings['custom_css'] ?? '';
         $saved_mods = $settings['saved_modifications'] ?? '{}';
+        $widget_id  = $this->get_id();
+        $is_editor  = \Elementor\Plugin::$instance->editor->is_edit_mode();
 
         if ( empty( $html_code ) ) {
-            if ( \Elementor\Plugin::$instance->editor->is_edit_mode() ) {
-                echo '<div class="momentum-html-output" style="padding:40px;text-align:center;background:#f9f9f9;border:2px dashed #ddd;border-radius:8px;">';
-                echo '<p style="color:#999;font-size:16px;">📝 حط كود HTML في التاب الأولى عشان يظهر هنا</p>';
+            if ( $is_editor ) {
+                echo '<div class="momentum-html-output" data-widget-id="' . esc_attr( $widget_id ) . '" style="padding:50px;text-align:center;background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;">';
+                echo '<p style="color:#999;font-size:18px;">📝 حط كود HTML في تاب "كود HTML" عشان يظهر هنا</p>';
                 echo '</div>';
             }
             return;
         }
 
-        // Apply saved modifications
-        $modifications = json_decode( $saved_mods, true );
-        if ( ! empty( $modifications ) && is_array( $modifications ) ) {
-            $html_code = $this->apply_modifications( $html_code, $modifications );
+        // Apply modifications
+        $mods = json_decode( $saved_mods, true );
+        if ( ! empty( $mods ) && is_array( $mods ) ) {
+            $html_code = $this->apply_mods( $html_code, $mods );
         }
-
-        $widget_id = $this->get_id();
-        $is_editor = \Elementor\Plugin::$instance->editor->is_edit_mode();
 
         echo '<div class="momentum-html-output' . ( $is_editor ? ' momentum-editable' : '' ) . '" data-widget-id="' . esc_attr( $widget_id ) . '">';
 
@@ -214,72 +235,79 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         echo '</div>';
     }
 
-    private function apply_modifications( $html_code, $modifications ) {
-        if ( empty( $modifications ) ) {
-            return $html_code;
-        }
+    // ============================================
+    // APPLY MODIFICATIONS
+    // ============================================
+    private function apply_mods( $html, $mods ) {
+        if ( empty( $mods ) ) return $html;
 
         $dom = new \DOMDocument();
         libxml_use_internal_errors( true );
-
-        $html_wrapped = '<?xml encoding="UTF-8"><div id="m-root">' . $html_code . '</div>';
-        $dom->loadHTML( $html_wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEDEFAULT );
+        $dom->loadHTML( '<?xml encoding="UTF-8"><div id="m-r">' . $html . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEDEFAULT );
         libxml_clear_errors();
 
         $xpath = new \DOMXPath( $dom );
 
-        // Apply text modifications
-        if ( isset( $modifications['texts'] ) && is_array( $modifications['texts'] ) ) {
-            foreach ( $modifications['texts'] as $selector => $data ) {
+        $allowed = [ 'h1','h2','h3','h4','h5','h6','p','span','a','li','td','th','label','button','strong','em','b','i','small','blockquote' ];
+
+        // --- Text & Style modifications ---
+        if ( isset( $mods['texts'] ) && is_array( $mods['texts'] ) ) {
+            foreach ( $mods['texts'] as $selector => $data ) {
                 $parts = explode( ':', $selector );
                 if ( count( $parts ) !== 2 ) continue;
 
-                $tag   = sanitize_key( $parts[0] );
+                $tag   = strtolower( trim( $parts[0] ) );
                 $index = intval( $parts[1] );
 
-                $allowed_tags = [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'a', 'li', 'td', 'th', 'label', 'button', 'strong', 'em', 'b', 'i', 'small', 'blockquote' ];
-                if ( ! in_array( $tag, $allowed_tags ) ) continue;
+                if ( ! in_array( $tag, $allowed ) ) continue;
 
                 $elements = $xpath->query( '//' . $tag );
                 $counter  = 0;
 
                 foreach ( $elements as $el ) {
                     if ( $counter === $index ) {
-                        // Update text
+                        // Text
                         if ( isset( $data['text'] ) ) {
-                            $has_children = false;
-                            foreach ( $el->childNodes as $child ) {
-                                if ( $child->nodeType === XML_ELEMENT_NODE ) {
-                                    $has_children = true;
+                            $has_child_elements = false;
+                            foreach ( $el->childNodes as $ch ) {
+                                if ( $ch->nodeType === XML_ELEMENT_NODE ) {
+                                    $has_child_elements = true;
                                     break;
                                 }
                             }
-                            if ( ! $has_children ) {
+                            if ( ! $has_child_elements ) {
                                 $el->nodeValue = '';
                                 $el->appendChild( $dom->createTextNode( $data['text'] ) );
                             }
                         }
 
-                        // Apply styles
+                        // Styles
                         $style = $el->getAttribute( 'style' ) ?: '';
 
-                        if ( isset( $data['color'] ) ) {
-                            $style = preg_replace( '/color\s*:[^;]+;?/', '', $style );
-                            $style .= ';color:' . sanitize_text_field( $data['color'] );
-                        }
-                        if ( isset( $data['fontSize'] ) ) {
-                            $style = preg_replace( '/font-size\s*:[^;]+;?/', '', $style );
-                            $style .= ';font-size:' . sanitize_text_field( $data['fontSize'] );
-                        }
-                        if ( isset( $data['fontWeight'] ) ) {
-                            $style = preg_replace( '/font-weight\s*:[^;]+;?/', '', $style );
-                            $style .= ';font-weight:' . sanitize_text_field( $data['fontWeight'] );
+                        $style_map = [
+                            'color'           => 'color',
+                            'fontSize'        => 'font-size',
+                            'fontWeight'      => 'font-weight',
+                            'fontStyle'       => 'font-style',
+                            'textDecoration'  => 'text-decoration',
+                            'textAlign'       => 'text-align',
+                            'lineHeight'      => 'line-height',
+                            'letterSpacing'   => 'letter-spacing',
+                            'backgroundColor' => 'background-color',
+                        ];
+
+                        foreach ( $style_map as $js_prop => $css_prop ) {
+                            if ( isset( $data[ $js_prop ] ) ) {
+                                $style = preg_replace( '/' . preg_quote( $css_prop ) . '\s*:[^;]+;?/', '', $style );
+                                $style .= ';' . $css_prop . ':' . sanitize_text_field( $data[ $js_prop ] );
+                            }
                         }
 
                         $style = trim( $style, '; ' );
                         if ( $style ) {
                             $el->setAttribute( 'style', $style );
                         }
+
                         break;
                     }
                     $counter++;
@@ -287,16 +315,85 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             }
         }
 
-        // Apply image modifications
-        if ( isset( $modifications['images'] ) && is_array( $modifications['images'] ) ) {
+        // --- Image modifications ---
+        if ( isset( $mods['images'] ) && is_array( $mods['images'] ) ) {
             $images = $xpath->query( '//img' );
-            foreach ( $modifications['images'] as $idx => $data ) {
+
+            foreach ( $mods['images'] as $idx => $data ) {
                 $index   = intval( $idx );
                 $counter = 0;
+
                 foreach ( $images as $img ) {
                     if ( $counter === $index ) {
                         if ( isset( $data['src'] ) ) {
                             $img->setAttribute( 'src', esc_url( $data['src'] ) );
+                        }
+
+                        $style = $img->getAttribute( 'style' ) ?: '';
+
+                        if ( isset( $data['width'] ) ) {
+                            $img->setAttribute( 'width', intval( $data['width'] ) );
+                            $style = preg_replace( '/width\s*:[^;]+;?/', '', $style );
+                            $style .= ';width:' . intval( $data['width'] ) . 'px';
+                        }
+
+                        if ( isset( $data['height'] ) ) {
+                            $img->setAttribute( 'height', intval( $data['height'] ) );
+                            $style = preg_replace( '/height\s*:[^;]+;?/', '', $style );
+                            $style .= ';height:' . intval( $data['height'] ) . 'px';
+                        }
+
+                        if ( isset( $data['borderRadius'] ) ) {
+                            $style = preg_replace( '/border-radius\s*:[^;]+;?/', '', $style );
+                            $style .= ';border-radius:' . intval( $data['borderRadius'] ) . 'px';
+                        }
+
+                        $style = trim( $style, '; ' );
+                        if ( $style ) {
+                            $img->setAttribute( 'style', $style );
+                        }
+
+                        break;
+                    }
+                    $counter++;
+                }
+            }
+        }
+
+        // --- Link modifications ---
+        if ( isset( $mods['links'] ) && is_array( $mods['links'] ) ) {
+            $links = $xpath->query( '//a' );
+
+            foreach ( $mods['links'] as $selector => $data ) {
+                $parts = explode( ':', $selector );
+                if ( count( $parts ) !== 2 ) continue;
+
+                $index   = intval( $parts[1] );
+                $counter = 0;
+
+                foreach ( $links as $link ) {
+                    if ( $counter === $index ) {
+                        if ( isset( $data['href'] ) ) {
+                            $link->setAttribute( 'href', esc_url( $data['href'] ) );
+                        }
+                        if ( isset( $data['target'] ) && $data['target'] === '_blank' ) {
+                            $link->setAttribute( 'target', '_blank' );
+                            $link->setAttribute( 'rel', 'noopener noreferrer' );
+                        } elseif ( isset( $data['target'] ) ) {
+                            $link->removeAttribute( 'target' );
+                        }
+                        if ( isset( $data['text'] ) ) {
+                            $has_children = false;
+                            foreach ( $link->childNodes as $ch ) {
+                                if ( $ch->nodeType === XML_ELEMENT_NODE ) {
+                                    $has_children = true;
+                                    break;
+                                }
+                            }
+                            if ( ! $has_children ) {
+                                $link->nodeValue = '';
+                                $link->appendChild( $dom->createTextNode( $data['text'] ) );
+                            }
                         }
                         break;
                     }
@@ -305,7 +402,8 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             }
         }
 
-        $root   = $dom->getElementById( 'm-root' );
+        // Get output
+        $root   = $dom->getElementById( 'm-r' );
         $output = '';
         if ( $root ) {
             foreach ( $root->childNodes as $child ) {
@@ -313,24 +411,27 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             }
         }
 
-        return $output ?: $html_code;
+        return $output ?: $html;
     }
 
+    // ============================================
+    // CONTENT TEMPLATE (Editor live preview)
+    // ============================================
     protected function content_template() {
         ?>
         <#
-        var htmlCode = settings.html_code || '';
-        var customCss = settings.custom_css || '';
+        var html = settings.html_code || '';
+        var css = settings.custom_css || '';
         #>
         <div class="momentum-html-output momentum-editable" data-widget-id="{{ view.getID() }}">
-            <# if ( customCss ) { #>
-                <style>{{{ customCss }}}</style>
+            <# if ( css ) { #>
+                <style>{{{ css }}}</style>
             <# } #>
-            <# if ( htmlCode ) { #>
-                {{{ htmlCode }}}
+            <# if ( html ) { #>
+                {{{ html }}}
             <# } else { #>
-                <div style="padding:40px;text-align:center;background:#f9f9f9;border:2px dashed #ddd;border-radius:8px;">
-                    <p style="color:#999;font-size:16px;">📝 حط كود HTML في التاب الأولى عشان يظهر هنا</p>
+                <div style="padding:50px;text-align:center;background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;">
+                    <p style="color:#999;font-size:18px;">📝 حط كود HTML في تاب "كود HTML"</p>
                 </div>
             <# } #>
         </div>
