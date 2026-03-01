@@ -1,109 +1,11 @@
 /**
- * Momentum Pro Editor v2.1 - Preview Styles
+ * Momentum Pro Editor v2.1 - Frontend Styles
  */
 
 /* Main Container */
 .momentum-html-output {
     position: relative;
     width: 100%;
-    transition: all 0.3s ease;
-}
-
-/* Editable Elements */
-.elementor-editor-active .momentum-editable [contenteditable="true"] {
-    transition: outline 0.15s ease, background-color 0.15s ease;
-    cursor: text !important;
-}
-.elementor-editor-active .momentum-editable [contenteditable="true"]:hover {
-    outline: 2px dashed rgba(108, 99, 255, 0.4) !important;
-    outline-offset: 2px !important;
-}
-.elementor-editor-active .momentum-editable [contenteditable="true"]:focus {
-    outline: 2px solid #6C63FF !important;
-    outline-offset: 3px !important;
-}
-
-/* Image Hover */
-.elementor-editor-active .momentum-editable img {
-    transition: outline 0.15s ease;
-    cursor: pointer !important;
-}
-.elementor-editor-active .momentum-editable img:hover {
-    outline: 3px solid rgba(108, 99, 255, 0.5) !important;
-    outline-offset: 3px !important;
-}
-
-/* Container Hover */
-.elementor-editor-active .momentum-editable > div:hover,
-.elementor-editor-active .momentum-editable > section:hover,
-.elementor-editor-active .momentum-editable > article:hover {
-    outline: 1px dashed rgba(255, 152, 0, 0.3) !important;
-    outline-offset: 1px !important;
-}
-
-/* Link Indicator */
-.elementor-editor-active .momentum-editable a {
-    position: relative;
-    cursor: text !important;
-}
-.elementor-editor-active .momentum-editable a::after {
-    content: '🔗';
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    font-size: 10px;
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-}
-.elementor-editor-active .momentum-editable a:hover::after {
-    opacity: 1;
-}
-
-/* Resize Handle */
-.m-resize-handle {
-    transition: transform 0.15s;
-}
-.m-resize-handle:hover {
-    transform: scale(1.3);
-}
-
-/* Toolbar Animation */
-#m-toolbar,
-.m-img-bar,
-.m-img-controls,
-.m-box-bar,
-#m-link-editor {
-    animation: mToolbarIn 0.2s ease-out;
-}
-@keyframes mToolbarIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Badge Animation */
-.m-badge {
-    animation: mBadgeIn 0.3s ease-out;
-}
-@keyframes mBadgeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Empty State */
-.momentum-html-output:empty {
-    min-height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px dashed #ddd;
-    border-radius: 12px;
-    background: #f8f9fa;
-}
-
-/* Selection Highlight */
-.elementor-editor-active .momentum-editable [contenteditable="true"]::selection {
-    background: rgba(108, 99, 255, 0.2);
 }
 
 /* Responsive Images */
@@ -112,16 +14,45 @@
     height: auto;
 }
 
-/* Print - hide editor UI */
+/* Responsive Typography */
+@media screen and (max-width: 767px) {
+    .momentum-html-output h1 { font-size: clamp(1.25rem, 5vw, 2rem); }
+    .momentum-html-output h2 { font-size: clamp(1.1rem, 4vw, 1.5rem); }
+    .momentum-html-output h3 { font-size: clamp(1rem, 3.5vw, 1.25rem); }
+    .momentum-html-output p,
+    .momentum-html-output span,
+    .momentum-html-output li { font-size: clamp(0.875rem, 3vw, 1rem); }
+}
+
+/* Responsive Tables */
+@media screen and (max-width: 767px) {
+    .momentum-html-output table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Responsive Media */
+.momentum-html-output iframe,
+.momentum-html-output video,
+.momentum-html-output embed {
+    max-width: 100%;
+}
+
+/* Links */
+.momentum-html-output a {
+    transition: opacity 0.2s ease;
+}
+.momentum-html-output a:hover {
+    opacity: 0.85;
+}
+
+/* Print */
 @media print {
-    .m-badge,
-    .m-img-bar,
-    .m-img-controls,
-    .m-resize-handle,
-    .m-resize-h,
-    .m-box-bar,
-    #m-toolbar,
-    #m-link-editor {
-        display: none !important;
+    .momentum-html-output {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: none !important;
     }
 }
