@@ -47,7 +47,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
                 'rows'        => 20,
                 'default'     => '<div style="padding:40px; text-align:center;">
     <h1 style="color:#333; font-size:36px; margin-bottom:15px;">مرحباً بيك في Momentum Pro Editor</h1>
-    <p style="color:#666; font-size:18px; margin-bottom:25px;">اضغط على أي نص عشان تعدله مباشرة - غيّر الألوان والخطوط والمسافات</p>
+    <p style="color:#666; font-size:18px; margin-bottom:25px;">اضغط على أي نص عشان تعدله مباشرة</p>
     <a href="https://example.com" style="background:#6C63FF; color:#fff; padding:12px 30px; border-radius:8px; text-decoration:none; font-size:16px;">اضغط هنا</a>
     <img src="https://via.placeholder.com/600x300/6C63FF/ffffff?text=Momentum+Pro" alt="صورة تجريبية" width="600" height="300" style="margin-top:25px; border-radius:12px;">
     <p style="color:#999; font-size:14px; margin-top:20px;">اضغط مرتين على أي رابط عشان تعدله 🔗</p>
@@ -63,7 +63,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
                     <strong style="font-size:14px;">💡 طريقة الاستخدام:</strong><br>
                     ✏️ اضغط على أي <strong>نص</strong> عشان تعدله مباشرة<br>
                     🎨 غيّر <strong>الألوان والخطوط</strong> من الـ Toolbar<br>
-                    📷 اضغط على أي <strong>صورة</strong> عشان تغيرها أو تغيّر حجمها بالسحب<br>
+                    📷 اضغط على أي <strong>صورة</strong> عشان تغيرها<br>
                     🔗 اضغط مرتين على أي <strong>رابط</strong> عشان تعدله<br>
                     ↩️ <strong>Ctrl+Z</strong> للتراجع | <strong>Ctrl+Y</strong> للإعادة<br>
                     <small style="opacity:0.8;">كل التعديلات بتتحفظ تلقائياً ✅</small>
@@ -74,7 +74,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         $this->end_controls_section();
 
         // ============================================
-        // TAB: MODIFICATIONS STORAGE
+        // TAB: MODIFICATIONS STORAGE (hidden)
         // ============================================
         $this->start_controls_section(
             'section_mods',
@@ -200,7 +200,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
     }
 
     // ============================================
-    // RENDER (Frontend & Server-side Editor)
+    // RENDER
     // ============================================
     protected function render() {
         $settings   = $this->get_settings_for_display();
@@ -219,16 +219,15 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             return;
         }
 
-        // Apply saved modifications server-side
+        // Apply saved modifications to HTML
         $mods = json_decode( $saved_mods, true );
         if ( ! empty( $mods ) && is_array( $mods ) ) {
             $html_code = $this->apply_mods( $html_code, $mods );
         }
 
-        // Escape the mods JSON for use in data attribute
-        $mods_attr = esc_attr( $saved_mods );
+        $editor_class = $is_editor ? ' momentum-editable' : '';
 
-        echo '<div class="momentum-html-output' . ( $is_editor ? ' momentum-editable' : '' ) . '" data-widget-id="' . esc_attr( $widget_id ) . '" data-mods="' . $mods_attr . '">';
+        echo '<div class="momentum-html-output' . $editor_class . '" data-widget-id="' . esc_attr( $widget_id ) . '">';
 
         if ( ! empty( $custom_css ) ) {
             echo '<style>' . $custom_css . '</style>';
@@ -239,7 +238,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
     }
 
     // ============================================
-    // APPLY MODIFICATIONS (Server-side)
+    // APPLY MODIFICATIONS SERVER-SIDE
     // ============================================
     private function apply_mods( $html, $mods ) {
         if ( empty( $mods ) ) return $html;
@@ -247,11 +246,14 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         $dom = new \DOMDocument();
         libxml_use_internal_errors( true );
 
-        // LIBXML_HTML_NODEFDTD (NOT NODEDEFAULT - that constant doesn't exist)
-        $dom->loadHTML(
-            '<?xml encoding="UTF-8"><div id="m-r">' . $html . '</div>',
-            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
-        );
+        // ✅ FIX: LIBXML_HTML_NODEFDTD not NODEDEFAULT (doesn't exist!)
+        $flags = LIBXML_HTML_NOIMPLIED;
+        if ( defined( 'LIBXML_HTML_NODEFDTD' ) ) {
+            $flags |= LIBXML_HTML_NODEFDTD;
+        }
+
+        $wrapped = '<div id="m-r">' . $html . '</div>';
+        $dom->loadHTML( '<?xml encoding="UTF-8">' . $wrapped, $flags );
         libxml_clear_errors();
 
         $xpath = new \DOMXPath( $dom );
@@ -261,8 +263,8 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             'label','button','strong','em','b','i','small','blockquote'
         ];
 
-        // --- Text & Style modifications ---
-        if ( isset( $mods['texts'] ) && is_array( $mods['texts'] ) ) {
+        // --- Text & Style ---
+        if ( ! empty( $mods['texts'] ) && is_array( $mods['texts'] ) ) {
             foreach ( $mods['texts'] as $selector => $data ) {
                 $parts = explode( ':', $selector );
                 if ( count( $parts ) !== 2 ) continue;
@@ -273,11 +275,12 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
                 if ( ! in_array( $tag, $allowed, true ) ) continue;
 
                 $elements = $xpath->query( '//' . $tag );
-                $counter  = 0;
+                if ( ! $elements || $elements->length === 0 ) continue;
 
+                $counter = 0;
                 foreach ( $elements as $el ) {
                     if ( $counter === $index ) {
-                        // Update text content
+                        // Text
                         if ( isset( $data['text'] ) ) {
                             $has_child_elements = false;
                             foreach ( $el->childNodes as $ch ) {
@@ -292,7 +295,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
                             }
                         }
 
-                        // Update styles
+                        // Styles
                         $style = $el->getAttribute( 'style' ) ?: '';
 
                         $style_map = [
@@ -305,16 +308,18 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
                             'lineHeight'      => 'line-height',
                             'letterSpacing'   => 'letter-spacing',
                             'backgroundColor' => 'background-color',
+                            'padding'         => 'padding',
                         ];
 
                         foreach ( $style_map as $js_prop => $css_prop ) {
-                            if ( isset( $data[ $js_prop ] ) ) {
+                            if ( isset( $data[ $js_prop ] ) && $data[ $js_prop ] !== '' ) {
                                 $style = preg_replace(
                                     '/' . preg_quote( $css_prop, '/' ) . '\s*:[^;]+;?/',
                                     '',
                                     $style
                                 );
-                                $style .= ';' . $css_prop . ':' . sanitize_text_field( $data[ $js_prop ] );
+                                $val = sanitize_text_field( $data[ $js_prop ] );
+                                $style = rtrim( $style, '; ' ) . ';' . $css_prop . ':' . $val;
                             }
                         }
 
@@ -330,8 +335,8 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             }
         }
 
-        // --- Image modifications ---
-        if ( isset( $mods['images'] ) && is_array( $mods['images'] ) ) {
+        // --- Images ---
+        if ( ! empty( $mods['images'] ) && is_array( $mods['images'] ) ) {
             $images = $xpath->query( '//img' );
 
             foreach ( $mods['images'] as $idx => $data ) {
@@ -340,27 +345,27 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
 
                 foreach ( $images as $img ) {
                     if ( $counter === $index ) {
-                        if ( isset( $data['src'] ) ) {
+                        if ( ! empty( $data['src'] ) ) {
                             $img->setAttribute( 'src', esc_url( $data['src'] ) );
                         }
 
                         $style = $img->getAttribute( 'style' ) ?: '';
 
-                        if ( isset( $data['width'] ) ) {
+                        if ( isset( $data['width'] ) && $data['width'] > 0 ) {
                             $img->setAttribute( 'width', intval( $data['width'] ) );
                             $style = preg_replace( '/width\s*:[^;]+;?/', '', $style );
-                            $style .= ';width:' . intval( $data['width'] ) . 'px';
+                            $style = rtrim( $style, '; ' ) . ';width:' . intval( $data['width'] ) . 'px';
                         }
 
-                        if ( isset( $data['height'] ) ) {
+                        if ( isset( $data['height'] ) && $data['height'] > 0 ) {
                             $img->setAttribute( 'height', intval( $data['height'] ) );
                             $style = preg_replace( '/height\s*:[^;]+;?/', '', $style );
-                            $style .= ';height:' . intval( $data['height'] ) . 'px';
+                            $style = rtrim( $style, '; ' ) . ';height:' . intval( $data['height'] ) . 'px';
                         }
 
                         if ( isset( $data['borderRadius'] ) ) {
                             $style = preg_replace( '/border-radius\s*:[^;]+;?/', '', $style );
-                            $style .= ';border-radius:' . intval( $data['borderRadius'] ) . 'px';
+                            $style = rtrim( $style, '; ' ) . ';border-radius:' . intval( $data['borderRadius'] ) . 'px';
                         }
 
                         $style = trim( $style, '; ' );
@@ -375,8 +380,8 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             }
         }
 
-        // --- Link modifications ---
-        if ( isset( $mods['links'] ) && is_array( $mods['links'] ) ) {
+        // --- Links ---
+        if ( ! empty( $mods['links'] ) && is_array( $mods['links'] ) ) {
             $links = $xpath->query( '//a' );
 
             foreach ( $mods['links'] as $selector => $data ) {
@@ -388,7 +393,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
 
                 foreach ( $links as $link ) {
                     if ( $counter === $index ) {
-                        if ( isset( $data['href'] ) ) {
+                        if ( ! empty( $data['href'] ) ) {
                             $link->setAttribute( 'href', esc_url( $data['href'] ) );
                         }
                         if ( isset( $data['target'] ) && $data['target'] === '_blank' ) {
@@ -417,7 +422,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
             }
         }
 
-        // Extract output from wrapper
+        // Get output from wrapper
         $root   = $dom->getElementById( 'm-r' );
         $output = '';
         if ( $root ) {
@@ -430,19 +435,19 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
     }
 
     // ============================================
-    // CONTENT TEMPLATE (Editor JS live preview)
+    // CONTENT TEMPLATE - مهم جداً!
+    // Elementor بيستخدمه للـ live preview في الإديتور
+    // لازم يكون متوافق مع الـ render() 
     // ============================================
     protected function content_template() {
         ?>
         <#
         var html     = settings.html_code || '';
         var css      = settings.custom_css || '';
-        var modsStr  = settings.saved_modifications || '{}';
         var widgetId = view.getID();
         #>
         <div class="momentum-html-output momentum-editable"
-             data-widget-id="{{ widgetId }}"
-             data-mods="{{ modsStr }}">
+             data-widget-id="{{ widgetId }}">
             <# if ( css ) { #>
                 <style>{{{ css }}}</style>
             <# } #>
