@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Momentum Pro Editor
  * Description: Elementor widget that parses HTML code and provides visual controls for easy editing
- * Version: 1.0.0
- * Author: Yasser
+ * Version: 1.0.1
+ * Author: Yasser Momentum
  * Author URI: https://momentummix.com/
  * License: GPL v3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'MOMENTUM_PRO_VERSION', '1.0.0' );
+define( 'MOMENTUM_PRO_VERSION', '1.0.1' );
 define( 'MOMENTUM_PRO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MOMENTUM_PRO_URL', plugin_dir_url( __FILE__ ) );
 
@@ -44,17 +44,20 @@ final class Momentum_Pro_Editor {
             return;
         }
 
+        // Register widget category early
+        add_action( 'elementor/elements/categories_registered', [ $this, 'register_categories' ] );
+
         // Register widgets
         add_action( 'elementor/widgets/register', [ $this, 'register_widgets' ] );
 
-        // Register editor scripts
+        // Register editor scripts (only in Elementor editor)
         add_action( 'elementor/editor/before_enqueue_scripts', [ $this, 'editor_scripts' ] );
 
-        // Register preview scripts
+        // Register preview scripts (only in Elementor preview iframe)
         add_action( 'elementor/preview/enqueue_scripts', [ $this, 'preview_scripts' ] );
 
-        // Register frontend scripts
-        add_action( 'elementor/frontend/after_enqueue_scripts', [ $this, 'frontend_scripts' ] );
+        // Register frontend styles only (NO JS on frontend)
+        add_action( 'elementor/frontend/after_enqueue_styles', [ $this, 'frontend_styles' ] );
     }
 
     public function admin_notice_missing_elementor() {
@@ -65,12 +68,20 @@ final class Momentum_Pro_Editor {
         <?php
     }
 
+    public function register_categories( $elements_manager ) {
+        $elements_manager->add_category( 'momentum-pro', [
+            'title' => esc_html__( 'Momentum Pro', 'momentum-pro-editor' ),
+            'icon'  => 'fa fa-code',
+        ] );
+    }
+
     public function register_widgets( $widgets_manager ) {
         require_once MOMENTUM_PRO_PATH . 'widgets/html-pro-widget.php';
         $widgets_manager->register( new \Momentum_HTML_Pro_Widget() );
     }
 
     public function editor_scripts() {
+        // These only load in the Elementor editor panel
         wp_enqueue_style(
             'momentum-editor-style',
             MOMENTUM_PRO_URL . 'assets/css/editor-style.css',
@@ -88,6 +99,7 @@ final class Momentum_Pro_Editor {
     }
 
     public function preview_scripts() {
+        // These only load inside the Elementor preview iframe
         wp_enqueue_script(
             'momentum-parser',
             MOMENTUM_PRO_URL . 'assets/js/parser.js',
@@ -104,7 +116,8 @@ final class Momentum_Pro_Editor {
         );
     }
 
-    public function frontend_scripts() {
+    public function frontend_styles() {
+        // Only CSS on frontend - NO JavaScript
         wp_enqueue_style(
             'momentum-frontend-style',
             MOMENTUM_PRO_URL . 'assets/css/frontend-style.css',
