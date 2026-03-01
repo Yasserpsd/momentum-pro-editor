@@ -1,28 +1,21 @@
 /**
- * Momentum Pro Editor v2.0 - Editor Styles
+ * Momentum Pro Editor v2.1 - Editor Styles
  */
 
-/* ================================
-   Widget Icon
-   ================================ */
+/* Widget Icon */
 .elementor-element .icon .eicon-code {
     color: #6C63FF;
 }
 
-/* ================================
-   Parse Button / Notice
-   ================================ */
+/* Usage Notice */
 .momentum-usage-notice div {
     transition: transform 0.2s;
 }
-
 .momentum-usage-notice div:hover {
     transform: translateY(-1px);
 }
 
-/* ================================
-   Section Headers
-   ================================ */
+/* Section Headers */
 .elementor-control-section_html_code .elementor-panel-heading-title,
 .elementor-control-section_mods .elementor-panel-heading-title,
 .elementor-control-section_spacing .elementor-panel-heading-title,
@@ -31,9 +24,7 @@
     font-size: 13px !important;
 }
 
-/* ================================
-   Code Editor
-   ================================ */
+/* Code Editor */
 .elementor-control-html_code .elementor-control-input-wrapper,
 .elementor-control-custom_css .elementor-control-input-wrapper {
     border-radius: 8px !important;
@@ -41,32 +32,25 @@
     border: 2px solid #e0e0e0 !important;
     transition: border-color 0.3s ease !important;
 }
-
 .elementor-control-html_code .elementor-control-input-wrapper:focus-within,
 .elementor-control-custom_css .elementor-control-input-wrapper:focus-within {
     border-color: #6C63FF !important;
 }
 
-/* ================================
-   Reset Button
-   ================================ */
+/* Reset Button */
 .momentum-mods-info button {
     transition: all 0.2s !important;
 }
-
 .momentum-mods-info button:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4) !important;
 }
 
-/* ================================
-   Dark Mode
-   ================================ */
+/* Dark Mode */
 .e-dark-mode .elementor-control-html_code .elementor-control-input-wrapper,
 .e-dark-mode .elementor-control-custom_css .elementor-control-input-wrapper {
     border-color: #444 !important;
 }
-
 .e-dark-mode .elementor-control-html_code .elementor-control-input-wrapper:focus-within,
 .e-dark-mode .elementor-control-custom_css .elementor-control-input-wrapper:focus-within {
     border-color: #6C63FF !important;
