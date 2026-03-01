@@ -1,0 +1,159 @@
+/**
+ * Momentum Pro Editor - Preview Styles
+ * Styles for the Elementor preview/editor iframe
+ */
+
+/* ================================
+   Main Output Container
+   ================================ */
+.momentum-html-output {
+    position: relative;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+/* ================================
+   Editable Elements Highlight (Editor Only)
+   ================================ */
+.elementor-editor-active .momentum-html-output h1,
+.elementor-editor-active .momentum-html-output h2,
+.elementor-editor-active .momentum-html-output h3,
+.elementor-editor-active .momentum-html-output h4,
+.elementor-editor-active .momentum-html-output h5,
+.elementor-editor-active .momentum-html-output h6,
+.elementor-editor-active .momentum-html-output p,
+.elementor-editor-active .momentum-html-output span,
+.elementor-editor-active .momentum-html-output a,
+.elementor-editor-active .momentum-html-output li,
+.elementor-editor-active .momentum-html-output label,
+.elementor-editor-active .momentum-html-output button,
+.elementor-editor-active .momentum-html-output blockquote {
+    transition: outline 0.2s ease, background-color 0.2s ease;
+    cursor: default;
+}
+
+.elementor-editor-active .momentum-html-output h1:hover,
+.elementor-editor-active .momentum-html-output h2:hover,
+.elementor-editor-active .momentum-html-output h3:hover,
+.elementor-editor-active .momentum-html-output h4:hover,
+.elementor-editor-active .momentum-html-output h5:hover,
+.elementor-editor-active .momentum-html-output h6:hover,
+.elementor-editor-active .momentum-html-output p:hover,
+.elementor-editor-active .momentum-html-output span:hover,
+.elementor-editor-active .momentum-html-output a:hover,
+.elementor-editor-active .momentum-html-output li:hover,
+.elementor-editor-active .momentum-html-output label:hover,
+.elementor-editor-active .momentum-html-output button:hover,
+.elementor-editor-active .momentum-html-output blockquote:hover {
+    outline: 2px dashed rgba(108, 99, 255, 0.5);
+    outline-offset: 3px;
+    background-color: rgba(108, 99, 255, 0.03);
+}
+
+/* ================================
+   Image Hover Effect (Editor Only)
+   ================================ */
+.elementor-editor-active .momentum-html-output img {
+    transition: outline 0.2s ease, opacity 0.2s ease;
+    cursor: default;
+}
+
+.elementor-editor-active .momentum-html-output img:hover {
+    outline: 2px dashed rgba(76, 175, 80, 0.5);
+    outline-offset: 3px;
+    opacity: 0.9;
+}
+
+/* ================================
+   Container Hover Effect (Editor Only)
+   ================================ */
+.elementor-editor-active .momentum-html-output > div,
+.elementor-editor-active .momentum-html-output > section,
+.elementor-editor-active .momentum-html-output > article {
+    transition: outline 0.2s ease;
+}
+
+.elementor-editor-active .momentum-html-output > div:hover,
+.elementor-editor-active .momentum-html-output > section:hover,
+.elementor-editor-active .momentum-html-output > article:hover {
+    outline: 1px dashed rgba(255, 152, 0, 0.4);
+    outline-offset: 2px;
+}
+
+/* ================================
+   Element Labels (Editor Only)
+   ================================ */
+.elementor-editor-active .momentum-html-output [data-momentum-label] {
+    position: relative;
+}
+
+.elementor-editor-active .momentum-html-output [data-momentum-label]:hover::before {
+    content: attr(data-momentum-label);
+    position: absolute;
+    top: -24px;
+    left: 0;
+    background: #6C63FF;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 1000;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    pointer-events: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* ================================
+   Empty State
+   ================================ */
+.momentum-html-output:empty {
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.elementor-editor-active .momentum-html-output:empty::after {
+    content: '📝 اسحب Momentum Pro Editor وابدأ اكتب كود HTML';
+    color: #999;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ================================
+   Responsive Images
+   ================================ */
+.momentum-html-output img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ================================
+   Animation for Updates
+   ================================ */
+@keyframes momentumHighlight {
+    0% {
+        background-color: rgba(108, 99, 255, 0.1);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+.momentum-updated {
+    animation: momentumHighlight 1s ease-out;
+}
+
+/* ================================
+   Print Styles
+   ================================ */
+@media print {
+    .momentum-html-output {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+}
