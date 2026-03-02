@@ -1,5 +1,5 @@
 /**
- * Momentum Pro Editor v2.0 - Frontend Styles
+ * Momentum Pro Editor v2.2 - Frontend Styles
  */
 
 /* Main Container */
@@ -44,7 +44,6 @@
 .momentum-html-output a {
     transition: opacity 0.2s ease;
 }
-
 .momentum-html-output a:hover {
     opacity: 0.85;
 }
