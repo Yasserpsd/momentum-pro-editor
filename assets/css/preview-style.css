@@ -1,58 +1,40 @@
 /**
- * Momentum Pro Editor v2.1 - Frontend Styles
+ * Momentum Pro Editor v2.2 - Preview Styles (Editor iframe)
  */
 
-/* Main Container */
-.momentum-html-output {
-    position: relative;
-    width: 100%;
+/* Prevent contenteditable default outline flash */
+.momentum-editable [contenteditable="true"] {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Responsive Images */
-.momentum-html-output img {
-    max-width: 100%;
-    height: auto;
+/* Smooth transitions for editable elements */
+.momentum-editable [contenteditable="true"],
+.momentum-editable img,
+.momentum-editable div,
+.momentum-editable section {
+    transition: outline 0.15s ease, outline-offset 0.15s ease;
 }
 
-/* Responsive Typography */
-@media screen and (max-width: 767px) {
-    .momentum-html-output h1 { font-size: clamp(1.25rem, 5vw, 2rem); }
-    .momentum-html-output h2 { font-size: clamp(1.1rem, 4vw, 1.5rem); }
-    .momentum-html-output h3 { font-size: clamp(1rem, 3.5vw, 1.25rem); }
-    .momentum-html-output p,
-    .momentum-html-output span,
-    .momentum-html-output li { font-size: clamp(0.875rem, 3vw, 1rem); }
+/* Prevent selection color flash on editable elements */
+.momentum-editable [contenteditable="true"]::selection {
+    background: rgba(108, 99, 255, 0.2);
 }
 
-/* Responsive Tables */
-@media screen and (max-width: 767px) {
-    .momentum-html-output table {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
+/* Badge animation */
+.m-badge {
+    animation: mBadgeIn 0.3s ease;
+}
+@keyframes mBadgeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive Media */
-.momentum-html-output iframe,
-.momentum-html-output video,
-.momentum-html-output embed {
-    max-width: 100%;
+/* Notification animation */
+.m-notify {
+    animation: mNotifyIn 0.3s ease;
 }
-
-/* Links */
-.momentum-html-output a {
-    transition: opacity 0.2s ease;
-}
-.momentum-html-output a:hover {
-    opacity: 0.85;
-}
-
-/* Print */
-@media print {
-    .momentum-html-output {
-        padding: 0 !important;
-        margin: 0 !important;
-        background: none !important;
-    }
+@keyframes mNotifyIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
 }
