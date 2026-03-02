@@ -4,12 +4,13 @@
     var MomentumPanel = {
 
         initialized: false,
+        saveTimer: null,
 
         init: function() {
             if (this.initialized) return;
             this.initialized = true;
             this.listenToPreview();
-            console.log('[Momentum] Panel: Ready');
+            console.log('[Momentum] Panel: Ready v2.2');
         },
 
         listenToPreview: function() {
@@ -26,23 +27,38 @@
                     return;
                 }
 
-                console.log('[Momentum] Received save for widget:', widgetId, mods);
+                // Debounce: لو فيه saves كتير ورا بعض، استنى شوية
+                if (self.saveTimer) clearTimeout(self.saveTimer);
 
-                try {
-                    var widget = self.findWidget(widgetId);
-                    if (widget) {
-                        var modsJson = JSON.stringify(mods);
-                        widget.setSetting('saved_modifications', modsJson);
-                        console.log('[Momentum] ✅ setSetting done, length:', modsJson.length);
-                    } else {
-                        console.error('[Momentum] ❌ Widget NOT found:', widgetId);
-                        // Fallback: try $e.run command
-                        self.fallbackSave(widgetId, mods);
-                    }
-                } catch(err) {
-                    console.error('[Momentum] Save error:', err);
-                }
+                self.saveTimer = setTimeout(function() {
+                    self.doSave(widgetId, mods);
+                }, 400);
             });
+        },
+
+        doSave: function(widgetId, mods) {
+            var self = this;
+
+            try {
+                var modsJson = JSON.stringify(mods);
+                var widget = self.findWidget(widgetId);
+
+                if (widget) {
+                    // حفظ بدون trigger re-render
+                    var settings = widget.get('settings');
+                    if (settings && typeof settings.set === 'function') {
+                        settings.set('saved_modifications', modsJson, { silent: true });
+                    } else {
+                        widget.setSetting('saved_modifications', modsJson);
+                    }
+                    console.log('[Momentum] ✅ Saved silently, length:', modsJson.length);
+                } else {
+                    console.warn('[Momentum] Widget not found, trying fallback:', widgetId);
+                    self.fallbackSave(widgetId, mods);
+                }
+            } catch(err) {
+                console.error('[Momentum] Save error:', err);
+            }
         },
 
         findWidget: function(id) {
@@ -88,8 +104,7 @@
         },
 
         /**
-         * Fallback: لو findWidget مش لاقي الويدجت، 
-         * نجرب نحفظ من خلال الـ panel view
+         * Fallback: لو findWidget مش لاقي الويدجت
          */
         fallbackSave: function(widgetId, mods) {
             try {
@@ -101,7 +116,12 @@
                 if (editedView && editedView.model) {
                     var currentId = editedView.model.get('id');
                     if (currentId === widgetId) {
-                        editedView.model.setSetting('saved_modifications', JSON.stringify(mods));
+                        var settings = editedView.model.get('settings');
+                        if (settings && typeof settings.set === 'function') {
+                            settings.set('saved_modifications', JSON.stringify(mods), { silent: true });
+                        } else {
+                            editedView.model.setSetting('saved_modifications', JSON.stringify(mods));
+                        }
                         console.log('[Momentum] ✅ Fallback save worked!');
                     }
                 }
