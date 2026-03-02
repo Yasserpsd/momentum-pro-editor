@@ -200,7 +200,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
     }
 
     // ============================================
-    // RENDER
+    // RENDER (server-side - يشتغل دايماً)
     // ============================================
     protected function render() {
         $settings   = $this->get_settings_for_display();
@@ -227,10 +227,10 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
 
         $editor_class = $is_editor ? ' momentum-editable' : '';
 
-        echo '<div class="momentum-html-output' . $editor_class . '" data-widget-id="' . esc_attr( $widget_id ) . '">';
+        echo '<div class="momentum-html-output' . $editor_class . '" data-widget-id="' . esc_attr( $widget_id ) . '" data-mods="' . esc_attr( $saved_mods ) . '">';
 
         if ( ! empty( $custom_css ) ) {
-            echo '<style>' . $custom_css . '</style>';
+            echo '<style>' . wp_strip_all_tags( $custom_css ) . '</style>';
         }
 
         echo $html_code;
@@ -246,7 +246,6 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         $dom = new \DOMDocument();
         libxml_use_internal_errors( true );
 
-        // ✅ FIX: LIBXML_HTML_NODEFDTD not NODEDEFAULT (doesn't exist!)
         $flags = LIBXML_HTML_NOIMPLIED;
         if ( defined( 'LIBXML_HTML_NODEFDTD' ) ) {
             $flags |= LIBXML_HTML_NODEFDTD;
@@ -260,7 +259,8 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
 
         $allowed = [
             'h1','h2','h3','h4','h5','h6','p','span','a','li','td','th',
-            'label','button','strong','em','b','i','small','blockquote'
+            'label','button','strong','em','b','i','small','blockquote',
+            'div','section','article','header','footer'
         ];
 
         // --- Text & Style ---
@@ -401,8 +401,9 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
                             $link->setAttribute( 'rel', 'noopener noreferrer' );
                         } elseif ( isset( $data['target'] ) ) {
                             $link->removeAttribute( 'target' );
+                            $link->removeAttribute( 'rel' );
                         }
-                        if ( isset( $data['text'] ) ) {
+                        if ( isset( $data['text'] ) && ! empty( $data['text'] ) ) {
                             $has_children = false;
                             foreach ( $link->childNodes as $ch ) {
                                 if ( $ch->nodeType === XML_ELEMENT_NODE ) {
@@ -415,6 +416,25 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
                                 $link->appendChild( $dom->createTextNode( $data['text'] ) );
                             }
                         }
+
+                        // Apply styles to links too
+                        if ( ! empty( $data['styles'] ) && is_array( $data['styles'] ) ) {
+                            $style = $link->getAttribute( 'style' ) ?: '';
+                            foreach ( $data['styles'] as $css_prop => $css_val ) {
+                                $style = preg_replace(
+                                    '/' . preg_quote( $css_prop, '/' ) . '\s*:[^;]+;?/',
+                                    '',
+                                    $style
+                                );
+                                $val = sanitize_text_field( $css_val );
+                                $style = rtrim( $style, '; ' ) . ';' . $css_prop . ':' . $val;
+                            }
+                            $style = trim( $style, '; ' );
+                            if ( $style ) {
+                                $link->setAttribute( 'style', $style );
+                            }
+                        }
+
                         break;
                     }
                     $counter++;
@@ -435,30 +455,8 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
     }
 
     // ============================================
-    // CONTENT TEMPLATE - مهم جداً!
-    // Elementor بيستخدمه للـ live preview في الإديتور
-    // لازم يكون متوافق مع الـ render() 
+    // NO content_template = forces server render
+    // ده بيخلي Elementor يستخدم render() دايماً
+    // وبالتالي apply_mods بتشتغل صح
     // ============================================
-    protected function content_template() {
-        ?>
-        <#
-        var html     = settings.html_code || '';
-        var css      = settings.custom_css || '';
-        var widgetId = view.getID();
-        #>
-        <div class="momentum-html-output momentum-editable"
-             data-widget-id="{{ widgetId }}">
-            <# if ( css ) { #>
-                <style>{{{ css }}}</style>
-            <# } #>
-            <# if ( html ) { #>
-                {{{ html }}}
-            <# } else { #>
-                <div style="padding:50px;text-align:center;background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;">
-                    <p style="color:#999;font-size:18px;">📝 حط كود HTML في تاب "كود HTML"</p>
-                </div>
-            <# } #>
-        </div>
-        <?php
-    }
 }
