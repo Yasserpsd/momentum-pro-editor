@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Momentum Pro Editor
  * Description: Elementor widget that parses HTML code and provides visual controls for easy editing
- * Version: 2.1.0
+ * Version: 2.2.0
  * Author: Yasser Momentum
  * Author URI: https://momentummix.com/
  * License: GPL v3
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'MOMENTUM_PRO_VERSION', '2.1.0' );
+define( 'MOMENTUM_PRO_VERSION', '2.2.0' );
 define( 'MOMENTUM_PRO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MOMENTUM_PRO_URL', plugin_dir_url( __FILE__ ) );
 
