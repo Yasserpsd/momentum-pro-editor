@@ -1,5 +1,5 @@
 /**
- * Momentum Pro Editor v2.2 - Editor Styles
+ * Momentum Pro Editor v3.0 - Editor Styles
  */
 
 /* Widget Icon */
@@ -35,6 +35,12 @@
 .elementor-control-html_code .elementor-control-input-wrapper:focus-within,
 .elementor-control-custom_css .elementor-control-input-wrapper:focus-within {
     border-color: #6C63FF !important;
+}
+
+/* Sync Button Hover */
+#momentum-sync-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4) !important;
 }
 
 /* Reset Button */
