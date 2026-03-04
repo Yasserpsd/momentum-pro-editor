@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Momentum Pro Editor
  * Description: Elementor widget - Visual HTML Editor with inline text selection styling
- * Version: 4.0.0
+ * Version: 4.1.0
  * Author: Yasser Momentum
  * Author URI: https://momentummix.com/
  * License: GPL v3
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'MOMENTUM_PRO_VERSION', '4.0.0' );
+define( 'MOMENTUM_PRO_VERSION', '4.1.0' );
 define( 'MOMENTUM_PRO_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MOMENTUM_PRO_URL', plugin_dir_url( __FILE__ ) );
 
@@ -110,6 +110,10 @@ final class Momentum_Pro_Editor {
         );
     }
 
+    /**
+     * AJAX: Sync - receives already-clean HTML from JS
+     * The JavaScript does the cleaning, PHP just validates
+     */
     public function ajax_sync_code() {
         check_ajax_referer( 'momentum_sync_nonce', 'nonce' );
 
@@ -123,37 +127,145 @@ final class Momentum_Pro_Editor {
             wp_send_json_error( 'Missing data' );
         }
 
-        // The HTML coming from the preview is already the final modified version
-        // We just need to clean it up
-        $clean_html = $this->clean_editor_artifacts( $html );
+        // Use DOMDocument for safe cleaning - only remove editor artifacts
+        $clean_html = $this->safe_clean_html( $html );
 
         wp_send_json_success( [ 'html' => $clean_html ] );
     }
 
     /**
-     * Remove editor-only artifacts from HTML before saving
+     * Safe HTML cleaning using DOMDocument
+     * ONLY removes editor-specific attributes, preserves ALL styles
      */
-    private function clean_editor_artifacts( $html ) {
-        // Remove contenteditable attributes
-        $html = preg_replace( '/\s*contenteditable\s*=\s*"[^"]*"/i', '', $html );
+    private function safe_clean_html( $html ) {
+        if ( empty( $html ) ) return $html;
 
-        // Remove editor outline styles
-        $html = preg_replace( '/\s*outline\s*:\s*[^;]*;?/i', '', $html );
-        $html = preg_replace( '/\s*outline-offset\s*:\s*[^;]*;?/i', '', $html );
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors( true );
 
-        // Remove cursor:text
-        $html = preg_replace( '/\s*cursor\s*:\s*text\s*;?/i', '', $html );
+        $flags = LIBXML_HTML_NOIMPLIED;
+        if ( defined( 'LIBXML_HTML_NODEFDTD' ) ) {
+            $flags |= LIBXML_HTML_NODEFDTD;
+        }
 
-        // Remove empty style attributes
-        $html = preg_replace( '/\s*style\s*=\s*"\s*"/i', '', $html );
+        // Wrap to prevent DOMDocument issues
+        $wrapped = '<div id="m-safe-root">' . $html . '</div>';
+        $dom->loadHTML( '<?xml encoding="UTF-8">' . $wrapped, $flags );
+        libxml_clear_errors();
 
-        // Remove m-badge
-        $html = preg_replace( '/<div class="m-badge"[^>]*>.*?<\/div>/is', '', $html );
+        $xpath = new \DOMXPath( $dom );
 
-        // Remove data-m attributes
-        $html = preg_replace( '/\s*data-m-[a-z0-9-]+\s*=\s*"[^"]*"/i', '', $html );
+        // 1. Remove m-badge elements
+        $badges = $xpath->query( '//*[contains(@class, "m-badge")]' );
+        if ( $badges ) {
+            foreach ( $badges as $badge ) {
+                $badge->parentNode->removeChild( $badge );
+            }
+        }
 
-        return trim( $html );
+        // 2. Remove toolbar/overlay elements
+        $toolbars = $xpath->query( '//*[@id="m-toolbar"] | //*[@id="m-link-editor"] | //*[contains(@class, "m-img-bar")] | //*[contains(@class, "m-box-bar")] | //*[contains(@class, "m-resize-h")] | //*[contains(@class, "m-notify")]' );
+        if ( $toolbars ) {
+            foreach ( $toolbars as $tb ) {
+                $tb->parentNode->removeChild( $tb );
+            }
+        }
+
+        // 3. Remove only editor-specific attributes from ALL elements
+        $all_elements = $xpath->query( '//*' );
+        if ( $all_elements ) {
+            foreach ( $all_elements as $el ) {
+                // Remove contenteditable
+                $el->removeAttribute( 'contenteditable' );
+
+                // Remove data-m4-* attributes only
+                $attrs_to_remove = [];
+                foreach ( $el->attributes as $attr ) {
+                    if ( strpos( $attr->name, 'data-m4-' ) === 0 ||
+                         strpos( $attr->name, 'data-m-' ) === 0 ||
+                         $attr->name === 'data-widget-id' ||
+                         $attr->name === 'data-m3' ||
+                         $attr->name === 'data-m4-init' ) {
+                        $attrs_to_remove[] = $attr->name;
+                    }
+                }
+                foreach ( $attrs_to_remove as $attr_name ) {
+                    $el->removeAttribute( $attr_name );
+                }
+
+                // Clean ONLY editor-injected styles from style attribute
+                $style = $el->getAttribute( 'style' );
+                if ( $style ) {
+                    $clean_style = $this->clean_editor_styles_only( $style );
+                    if ( $clean_style ) {
+                        $el->setAttribute( 'style', $clean_style );
+                    } else {
+                        $el->removeAttribute( 'style' );
+                    }
+                }
+            }
+        }
+
+        // 4. Remove the momentum-editable class but keep other classes
+        $editables = $xpath->query( '//*[contains(@class, "momentum-editable")]' );
+        if ( $editables ) {
+            foreach ( $editables as $editable ) {
+                $classes = $editable->getAttribute( 'class' );
+                $classes = preg_replace( '/\bmomentum-editable\b/', '', $classes );
+                $classes = trim( preg_replace( '/\s+/', ' ', $classes ) );
+                if ( $classes ) {
+                    $editable->setAttribute( 'class', $classes );
+                } else {
+                    $editable->removeAttribute( 'class' );
+                }
+            }
+        }
+
+        // Extract content from wrapper
+        $root = $dom->getElementById( 'm-safe-root' );
+        $output = '';
+        if ( $root ) {
+            // Skip the momentum-html-output wrapper div - get its inner content
+            foreach ( $root->childNodes as $child ) {
+                $output .= $dom->saveHTML( $child );
+            }
+        }
+
+        return $output ?: $html;
+    }
+
+    /**
+     * Remove ONLY editor-injected CSS properties, keep everything else intact
+     */
+    private function clean_editor_styles_only( $style ) {
+        if ( empty( $style ) ) return '';
+
+        // Parse style into individual properties
+        $properties = array_filter( array_map( 'trim', explode( ';', $style ) ) );
+        $clean_props = [];
+
+        // These are the ONLY properties the editor injects temporarily
+        $editor_only_patterns = [
+            '/^outline\s*:/i',
+            '/^outline-offset\s*:/i',
+            '/^cursor\s*:\s*text\s*$/i',          // only cursor:text, not other cursor values
+            '/^-webkit-tap-highlight-color\s*:/i',
+        ];
+
+        foreach ( $properties as $prop ) {
+            $is_editor_prop = false;
+            foreach ( $editor_only_patterns as $pattern ) {
+                if ( preg_match( $pattern, trim( $prop ) ) ) {
+                    $is_editor_prop = true;
+                    break;
+                }
+            }
+            if ( ! $is_editor_prop ) {
+                $clean_props[] = trim( $prop );
+            }
+        }
+
+        return implode( '; ', $clean_props );
     }
 }
 
