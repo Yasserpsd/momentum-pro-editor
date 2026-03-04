@@ -9,23 +9,19 @@
             if (this.initialized) return;
             this.initialized = true;
             this.listenToSyncRequest();
-            console.log('[Momentum] Panel: Ready v4.0');
+            console.log('[Momentum] Panel: Ready v4.1');
         },
 
         listenToSyncRequest: function() {
             var self = this;
             window.addEventListener('message', function(e) {
                 if (!e.data) return;
-
                 if (e.data.type === 'momentum-request-sync') {
                     self.syncToCode(e.data.widgetId, e.data.html);
                 }
             });
         },
 
-        /**
-         * Sync the live HTML from preview back into the code editor
-         */
         syncToCode: function(widgetId, liveHtml) {
             var self = this;
             var widget = self.findWidget(widgetId);
@@ -36,16 +32,15 @@
 
             if (!widget) {
                 console.warn('[Momentum] Cannot sync - widget not found');
-                if (typeof elementor !== 'undefined' && elementor.notifications) {
-                    elementor.notifications.showToast({
-                        message: '❌ لم يتم العثور على الويدجت',
-                        duration: 3000
-                    });
-                }
+                self.showToast('❌ لم يتم العثور على الويدجت');
                 return;
             }
 
-            // Send HTML to server for cleanup
+            // Show loading state
+            var $btn = $('#momentum-sync-btn');
+            var originalText = $btn.text();
+            $btn.text('⏳ جاري المزامنة...').prop('disabled', true);
+
             $.ajax({
                 url: momentumAjax.url,
                 type: 'POST',
@@ -55,6 +50,8 @@
                     html: liveHtml
                 },
                 success: function(response) {
+                    $btn.text(originalText).prop('disabled', false);
+
                     if (response.success && response.data && response.data.html) {
                         var newHtml = response.data.html;
                         var settings = widget.get('settings');
@@ -76,28 +73,28 @@
                             }
                         } catch(e2) {}
 
-                        if (typeof elementor !== 'undefined' && elementor.notifications) {
-                            elementor.notifications.showToast({
-                                message: '✅ تم مزامنة الكود بنجاح!',
-                                duration: 3000
-                            });
-                        }
-
+                        self.showToast('✅ تم مزامنة الكود بنجاح!');
                         console.log('[Momentum] Code synced successfully!');
                     } else {
                         console.error('[Momentum] Sync failed:', response);
-                        if (typeof elementor !== 'undefined' && elementor.notifications) {
-                            elementor.notifications.showToast({
-                                message: '❌ فشل المزامنة',
-                                duration: 3000
-                            });
-                        }
+                        self.showToast('❌ فشل المزامنة');
                     }
                 },
                 error: function(xhr, status, error) {
+                    $btn.text(originalText).prop('disabled', false);
                     console.error('[Momentum] Sync AJAX error:', error);
+                    self.showToast('❌ خطأ في الاتصال');
                 }
             });
+        },
+
+        showToast: function(msg) {
+            if (typeof elementor !== 'undefined' && elementor.notifications) {
+                elementor.notifications.showToast({
+                    message: msg,
+                    duration: 3000
+                });
+            }
         },
 
         findWidget: function(id) {
@@ -155,28 +152,26 @@
     };
 
     // ============================================
-    // SYNC BUTTON (called from panel button)
+    // SYNC BUTTON
     // ============================================
     window.momentumSyncToCode = function() {
         try {
-            // Ask the preview to send us the current live HTML
             var previewFrame = elementor.$preview && elementor.$preview[0];
-            if (previewFrame && previewFrame.contentWindow) {
-                // Get current widget ID
-                var panel = elementor.getPanelView();
-                if (!panel) return;
-                var currentPage = panel.getCurrentPageView();
-                if (!currentPage) return;
-                var editedView = currentPage.getOption('editedElementView');
-                if (!editedView || !editedView.model) return;
+            if (!previewFrame || !previewFrame.contentWindow) return;
 
-                var widgetId = editedView.model.get('id');
+            var panel = elementor.getPanelView();
+            if (!panel) return;
+            var currentPage = panel.getCurrentPageView();
+            if (!currentPage) return;
+            var editedView = currentPage.getOption('editedElementView');
+            if (!editedView || !editedView.model) return;
 
-                previewFrame.contentWindow.postMessage({
-                    type: 'momentum-get-html',
-                    widgetId: widgetId
-                }, '*');
-            }
+            var widgetId = editedView.model.get('id');
+
+            previewFrame.contentWindow.postMessage({
+                type: 'momentum-get-html',
+                widgetId: widgetId
+            }, '*');
         } catch(e) {
             console.error('[Momentum] Sync button error:', e);
         }
