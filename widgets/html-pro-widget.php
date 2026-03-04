@@ -50,7 +50,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
     <p style="color:#666; font-size:18px; margin-bottom:25px;">حدد أي كلمة وغيّر لونها أو نسّقها كما تشاء</p>
     <a href="https://example.com" style="background:#6C63FF; color:#fff; padding:12px 30px; border-radius:8px; text-decoration:none; font-size:16px; display:inline-block;">اضغط هنا</a>
     <img src="https://via.placeholder.com/600x300/6C63FF/ffffff?text=Momentum+Pro" alt="صورة تجريبية" width="600" height="300" style="margin-top:25px; border-radius:12px; display:block; margin-left:auto; margin-right:auto;">
-    <p style="color:#999; font-size:14px; margin-top:20px;">اضغط مرتين على أي رابط عشان تعدله 🔗</p>
+    <p style="color:#999; font-size:14px; margin-top:20px;">اضغط مرتين على أي رابط عشان تعدله</p>
 </div>',
             ]
         );
@@ -192,7 +192,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         if ( empty( $html_code ) ) {
             if ( $is_editor ) {
                 echo '<div class="momentum-html-output" data-widget-id="' . esc_attr( $widget_id ) . '" style="padding:50px;text-align:center;background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;">';
-                echo '<p style="color:#999;font-size:18px;">📝 حط كود HTML في تاب "كود HTML" عشان يظهر هنا</p>';
+                echo '<p style="color:#999;font-size:18px;">📝 حط كود HTML هنا</p>';
                 echo '</div>';
             }
             return;
@@ -203,7 +203,7 @@ class Momentum_HTML_Pro_Widget extends \Elementor\Widget_Base {
         echo '<div class="momentum-html-output' . $editor_class . '" data-widget-id="' . esc_attr( $widget_id ) . '">';
 
         if ( ! empty( $custom_css ) ) {
-            echo '<style>' . wp_strip_all_tags( $custom_css ) . '</style>';
+            echo '<style class="momentum-custom-css">' . wp_strip_all_tags( $custom_css ) . '</style>';
         }
 
         echo $html_code;
