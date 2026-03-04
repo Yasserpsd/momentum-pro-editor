@@ -1,14 +1,12 @@
 /**
- * Momentum Pro Editor v3.0 - Preview Styles (Editor iframe)
+ * Momentum Pro Editor v4.0 - Preview Styles
  */
 
-/* Prevent contenteditable default outline flash */
 .momentum-editable [contenteditable="true"] {
     outline: none !important;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Smooth transitions for editable elements */
 .momentum-editable [contenteditable="true"],
 .momentum-editable img,
 .momentum-editable div,
@@ -16,12 +14,16 @@
     transition: outline 0.15s ease, outline-offset 0.15s ease;
 }
 
-/* Prevent selection color flash on editable elements */
 .momentum-editable [contenteditable="true"]::selection {
-    background: rgba(108, 99, 255, 0.2);
+    background: rgba(108, 99, 255, 0.25);
+    color: inherit;
 }
 
-/* Badge animation */
+.momentum-editable img {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 .m-badge {
     animation: mBadgeIn 0.3s ease;
 }
@@ -30,7 +32,6 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Notification animation */
 .m-notify {
     animation: mNotifyIn 0.3s ease;
 }
@@ -39,8 +40,9 @@
     to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* Toolbar rows */
-#m-toolbar {
+#m-toolbar,
+.m-img-bar,
+.m-box-bar {
     animation: mToolbarIn 0.2s ease;
 }
 @keyframes mToolbarIn {
@@ -48,24 +50,9 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Pin indicator glow */
-#m-toolbar .m-pin-btn[style*="rgb(108, 99, 255)"] {
-    box-shadow: 0 0 8px rgba(108, 99, 255, 0.6);
-}
-
-/* Hover hint for boxes */
-.momentum-editable div:hover,
-.momentum-editable section:hover,
-.momentum-editable article:hover {
-    cursor: default;
-}
-
-/* Image bar animation */
-.m-img-bar {
-    animation: mToolbarIn 0.2s ease;
-}
-
-/* Box bar animation */
-.m-box-bar {
-    animation: mToolbarIn 0.2s ease;
+/* Make sure images inside contenteditable don't get weird selection */
+.momentum-editable [contenteditable="true"] img {
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: auto;
 }
