@@ -4,12 +4,32 @@
     var MomentumPanel = {
 
         initialized: false,
+        _syncInProgress: false,
 
         init: function() {
             if (this.initialized) return;
             this.initialized = true;
             this.listenToSyncRequest();
-            console.log('[Momentum] Panel: Ready v4.1');
+            this.injectBranding();
+            console.log('[Momentum] Panel: Ready v5.0');
+        },
+
+        injectBranding: function() {
+            // Add Momentum branding to panel sections
+            var checkBranding = setInterval(function() {
+                var $sections = $('.elementor-control-section_html_code .elementor-panel-heading-title');
+                if ($sections.length) {
+                    clearInterval(checkBranding);
+                    // Add a small M icon before sections belonging to Momentum
+                    $('.elementor-control-section_html_code, .elementor-control-section_responsive, .elementor-control-section_spacing, .elementor-control-section_css').each(function() {
+                        var $title = $(this).find('.elementor-panel-heading-title');
+                        if ($title.length && !$title.data('m-branded')) {
+                            $title.data('m-branded', true);
+                            $title.prepend('<span style="display:inline-block;width:8px;height:8px;background:linear-gradient(135deg,#6C63FF,#4CAF50);border-radius:50%;margin-right:6px;vertical-align:middle;"></span>');
+                        }
+                    });
+                }
+            }, 1000);
         },
 
         listenToSyncRequest: function() {
@@ -24,6 +44,13 @@
 
         syncToCode: function(widgetId, liveHtml) {
             var self = this;
+
+            if (self._syncInProgress) {
+                console.warn('[Momentum] Sync already in progress');
+                return;
+            }
+            self._syncInProgress = true;
+
             var widget = self.findWidget(widgetId);
 
             if (!widget) {
@@ -31,15 +58,17 @@
             }
 
             if (!widget) {
+                self._syncInProgress = false;
                 console.warn('[Momentum] Cannot sync - widget not found');
-                self.showToast('❌ لم يتم العثور على الويدجت');
+                self.updateStatus('❌ لم يتم العثور على الويدجت', 'error');
                 return;
             }
 
             // Show loading state
             var $btn = $('#momentum-sync-btn');
-            var originalText = $btn.text();
-            $btn.text('⏳ جاري المزامنة...').prop('disabled', true);
+            var originalText = $btn.html();
+            $btn.html('⏳ جاري المزامنة...').prop('disabled', true).css('opacity', '0.7');
+            self.updateStatus('⏳ جاري المزامنة...', 'loading');
 
             $.ajax({
                 url: momentumAjax.url,
@@ -49,52 +78,117 @@
                     nonce: momentumAjax.nonce,
                     html: liveHtml
                 },
+                timeout: 15000,
                 success: function(response) {
-                    $btn.text(originalText).prop('disabled', false);
+                    $btn.html(originalText).prop('disabled', false).css('opacity', '1');
 
                     if (response.success && response.data && response.data.html) {
                         var newHtml = response.data.html;
-                        var settings = widget.get('settings');
 
-                        if (settings && typeof settings.set === 'function') {
-                            settings.set('html_code', newHtml, { silent: false });
-                        } else {
-                            widget.setSetting('html_code', newHtml);
-                        }
-
-                        // Notify preview
                         try {
-                            var previewFrame = elementor.$preview && elementor.$preview[0];
-                            if (previewFrame && previewFrame.contentWindow) {
-                                previewFrame.contentWindow.postMessage({
-                                    type: 'momentum-code-synced',
-                                    widgetId: widgetId
-                                }, '*');
+                            // Method 1: Use Elementor's $e.run command (most reliable)
+                            if (typeof $e !== 'undefined' && $e.run) {
+                                $e.run('document/elements/settings', {
+                                    container: self.getContainer(widget),
+                                    settings: { html_code: newHtml },
+                                    options: { external: true }
+                                });
+                            } else {
+                                // Method 2: Direct settings update
+                                var settings = widget.get('settings');
+                                if (settings && typeof settings.set === 'function') {
+                                    settings.set('html_code', newHtml);
+                                } else {
+                                    widget.setSetting('html_code', newHtml);
+                                }
                             }
-                        } catch(e2) {}
 
-                        self.showToast('✅ تم مزامنة الكود بنجاح!');
-                        console.log('[Momentum] Code synced successfully!');
+                            // Notify preview
+                            try {
+                                var previewFrame = elementor.$preview && elementor.$preview[0];
+                                if (previewFrame && previewFrame.contentWindow) {
+                                    previewFrame.contentWindow.postMessage({
+                                        type: 'momentum-code-synced',
+                                        widgetId: widgetId
+                                    }, '*');
+                                }
+                            } catch(e2) {
+                                console.warn('[Momentum] Could not notify preview:', e2);
+                            }
+
+                            self.updateStatus('✅ تم مزامنة الكود بنجاح!', 'success');
+                            self.showToast('✅ تم مزامنة الكود بنجاح!');
+                            console.log('[Momentum] Code synced successfully!');
+
+                        } catch(settingsError) {
+                            console.error('[Momentum] Settings update error:', settingsError);
+                            self.updateStatus('⚠️ تم المزامنة - اضغط حفظ', 'warning');
+
+                            // Last resort: update the code editor textarea directly
+                            try {
+                                var $codeEditor = $('.elementor-control-html_code textarea');
+                                if ($codeEditor.length) {
+                                    $codeEditor.val(newHtml).trigger('input').trigger('change');
+                                }
+                            } catch(e3) {}
+                        }
                     } else {
                         console.error('[Momentum] Sync failed:', response);
-                        self.showToast('❌ فشل المزامنة');
+                        self.updateStatus('❌ فشل المزامنة', 'error');
                     }
+
+                    self._syncInProgress = false;
                 },
                 error: function(xhr, status, error) {
-                    $btn.text(originalText).prop('disabled', false);
+                    $btn.html(originalText).prop('disabled', false).css('opacity', '1');
                     console.error('[Momentum] Sync AJAX error:', error);
-                    self.showToast('❌ خطأ في الاتصال');
+                    self.updateStatus('❌ خطأ في الاتصال - حاول تاني', 'error');
+                    self._syncInProgress = false;
                 }
             });
         },
 
-        showToast: function(msg) {
-            if (typeof elementor !== 'undefined' && elementor.notifications) {
-                elementor.notifications.showToast({
-                    message: msg,
-                    duration: 3000
-                });
+        getContainer: function(widget) {
+            try {
+                if (typeof elementor !== 'undefined' && elementor.getContainer) {
+                    var id = (typeof widget.get === 'function') ? widget.get('id') : widget.id;
+                    return elementor.getContainer(id);
+                }
+            } catch(e) {}
+            return null;
+        },
+
+        updateStatus: function(msg, type) {
+            var $status = $('#momentum-sync-status');
+            if (!$status.length) return;
+
+            var colors = {
+                'success': '#4CAF50',
+                'error': '#e74c3c',
+                'warning': '#FF9800',
+                'loading': '#6C63FF'
+            };
+
+            $status.html(msg).css('color', colors[type] || '#888');
+
+            if (type !== 'loading') {
+                setTimeout(function() {
+                    $status.fadeOut(300, function() {
+                        $(this).html('').css('display', '').css('color', '#888');
+                    });
+                }, 4000);
             }
+        },
+
+        showToast: function(msg) {
+            try {
+                if (typeof elementor !== 'undefined' && elementor.notifications) {
+                    elementor.notifications.showToast({
+                        message: msg,
+                        duration: 3000
+                    });
+                }
+            } catch(e) {}
         },
 
         findWidget: function(id) {
@@ -126,8 +220,12 @@
                 }
             }
 
-            if (typeof elementor !== 'undefined' && elementor.elements) {
-                search(elementor.elements);
+            try {
+                if (typeof elementor !== 'undefined' && elementor.elements) {
+                    search(elementor.elements);
+                }
+            } catch(e) {
+                console.warn('[Momentum] findWidget error:', e);
             }
 
             return result;
@@ -152,15 +250,22 @@
     };
 
     // ============================================
-    // SYNC BUTTON
+    // SYNC BUTTON FUNCTION
     // ============================================
     window.momentumSyncToCode = function() {
         try {
             var previewFrame = elementor.$preview && elementor.$preview[0];
-            if (!previewFrame || !previewFrame.contentWindow) return;
+            if (!previewFrame || !previewFrame.contentWindow) {
+                console.warn('[Momentum] Preview frame not found');
+                return;
+            }
 
             var panel = elementor.getPanelView();
-            if (!panel) return;
+            if (!panel) {
+                console.warn('[Momentum] Panel not found');
+                return;
+            }
+
             var currentPage = panel.getCurrentPageView();
             if (!currentPage) return;
             var editedView = currentPage.getOption('editedElementView');
@@ -174,6 +279,7 @@
             }, '*');
         } catch(e) {
             console.error('[Momentum] Sync button error:', e);
+            $('#momentum-sync-status').html('❌ خطأ - حاول تاني').css('color', '#e74c3c');
         }
     };
 
