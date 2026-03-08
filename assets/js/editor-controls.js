@@ -5,15 +5,14 @@
 
         initialized: false,
         _syncInProgress: false,
-        _autoSyncTimers: {},
 
         init: function() {
             if (this.initialized) return;
             this.initialized = true;
             this.listenToSyncRequest();
             this.injectBranding();
-            this.startAutoSyncListener();
-            console.log('[Momentum] Panel: Ready v6.0');
+            // ⛔ تم إزالة startAutoSyncListener بالكامل
+            console.log('[Momentum] Panel: Ready v7.0 (Manual Sync Only)');
         },
 
         injectBranding: function() {
@@ -32,18 +31,7 @@
             }, 1000);
         },
 
-        // ============================================
-        // AUTO-SYNC: Listen for auto-sync triggers from preview
-        // ============================================
-        startAutoSyncListener: function() {
-            var self = this;
-            window.addEventListener('message', function(e) {
-                if (!e.data) return;
-                if (e.data.type === 'momentum-auto-sync-tick') {
-                    self.syncToCode(e.data.widgetId, e.data.html);
-                }
-            });
-        },
+        // ⛔ تم إزالة startAutoSyncListener بالكامل
 
         listenToSyncRequest: function() {
             var self = this;
@@ -112,6 +100,7 @@
                                 }
                             }
 
+                            // أرسل رسالة للـ preview إن السنك تم - لكن بدون re-render
                             try {
                                 var previewFrame = elementor.$preview && elementor.$preview[0];
                                 if (previewFrame && previewFrame.contentWindow) {
@@ -182,17 +171,6 @@
                     });
                 }, 3000);
             }
-        },
-
-        showToast: function(msg) {
-            try {
-                if (typeof elementor !== 'undefined' && elementor.notifications) {
-                    elementor.notifications.showToast({
-                        message: msg,
-                        duration: 2000
-                    });
-                }
-            } catch(e) {}
         },
 
         findWidget: function(id) {
