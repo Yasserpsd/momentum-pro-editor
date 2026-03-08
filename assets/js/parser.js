@@ -788,52 +788,139 @@
                 border: '1px solid rgba(108,99,255,0.3)'
             }).on('mousedown', function(e) { e.preventDefault(); });
 
+            /* Replace image via WP media */
             var $rep = this.btn('\ud83d\udcf7', '\u0627\u0633\u062a\u0628\u062f\u0627\u0644');
             $rep.on('mousedown', function(e) {
                 e.preventDefault();
                 try {
-                    var frame = wp.media({ title: '\u0627\u062e\u062a\u0631 \u0635\u0648\u0631\u0629', multiple: false, library: { type: 'image' } });
+                    var frame = wp.media({
+                        title: '\u0627\u062e\u062a\u0631 \u0635\u0648\u0631\u0629',
+                        multiple: false,
+                        library: { type: 'image' }
+                    });
                     frame.on('select', function() {
                         var att = frame.state().get('selection').first().toJSON();
-                        $img.attr('src', att.url);
-                        self.notify('\u2705 \u062a\u0645 \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u0635\u0648\u0631\u0629!');
+                        if (att && att.url) {
+                            $img.attr('src', att.url);
+                            if (att.alt) $img.attr('alt', att.alt);
+                            self.notify('\ud83d\udcf7 \u062a\u0645 \u0627\u0633\u062a\u0628\u062f\u0627\u0644 \u0627\u0644\u0635\u0648\u0631\u0629!');
+                        }
                     });
                     frame.open();
-                } catch(ex) { self.notify('\u274c \u062e\u0637\u0623 \u0641\u064a \u0641\u062a\u062d \u0645\u0643\u062a\u0628\u0629 \u0627\u0644\u0648\u0633\u0627\u0626\u0637'); }
+                } catch(ex) {
+                    var newUrl = prompt('\u0623\u062f\u062e\u0644 \u0631\u0627\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629:', $img.attr('src'));
+                    if (newUrl && newUrl.trim()) {
+                        $img.attr('src', newUrl.trim());
+                        self.notify('\ud83d\udcf7 \u062a\u0645 \u0627\u0633\u062a\u0628\u062f\u0627\u0644 \u0627\u0644\u0635\u0648\u0631\u0629!');
+                    }
+                }
             });
 
-            var $wD = this.btn('\u2212', '\u0623\u0635\u063a\u0631');
-            var $wL = $('<span>').css({ color: '#fff', fontSize: '11px', minWidth: '30px', textAlign: 'center', display: 'inline-block' }).text(Math.round(w));
-            var $wU = this.btn('+', '\u0623\u0643\u0628\u0631');
+            /* Width controls */
+            var curW = parseInt($img.css('width')) || w;
+            var $wD = this.btn('\u2212', '\u062a\u0635\u063a\u064a\u0631');
+            var $wL = $('<span>').css({ color: '#fff', fontSize: '10px', minWidth: '40px', textAlign: 'center', display: 'inline-block' }).text(curW + 'px');
+            var $wU = this.btn('+', '\u062a\u0643\u0628\u064a\u0631');
             $wD.on('mousedown', function(e) {
-                e.preventDefault(); w = Math.max(30, w - 10); h = Math.round(w / ratio);
-                $img.css({ width: w + 'px', height: h + 'px' }).attr({ width: Math.round(w), height: Math.round(h) });
-                $wL.text(Math.round(w));
+                e.preventDefault();
+                curW = Math.max(20, curW - 10);
+                $img.css({ width: curW + 'px', height: 'auto', maxWidth: '100%' });
+                $wL.text(curW + 'px');
             });
             $wU.on('mousedown', function(e) {
-                e.preventDefault(); w += 10; h = Math.round(w / ratio);
-                $img.css({ width: w + 'px', height: h + 'px' }).attr({ width: Math.round(w), height: Math.round(h) });
-                $wL.text(Math.round(w));
+                e.preventDefault();
+                curW = Math.min(2000, curW + 10);
+                $img.css({ width: curW + 'px', height: 'auto', maxWidth: '100%' });
+                $wL.text(curW + 'px');
             });
 
-            var br = parseInt($img.css('border-radius')) || 0;
-            var $brD = this.btn('\u25fb', '\u0623\u0642\u0644');
-            var $brL = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '22px', textAlign: 'center', display: 'inline-block' }).text(br);
-            var $brU = this.btn('\u25ef', '\u0623\u0643\u062b\u0631');
-            $brD.on('mousedown', function(e) { e.preventDefault(); br = Math.max(0, br - 4); $img.css('border-radius', br + 'px'); $brL.text(br); });
-            $brU.on('mousedown', function(e) { e.preventDefault(); br += 4; $img.css('border-radius', br + 'px'); $brL.text(br); });
+            /* Full width */
+            var $full = this.btn('100%', '\u0639\u0631\u0636 \u0643\u0627\u0645\u0644');
+            $full.on('mousedown', function(e) {
+                e.preventDefault();
+                $img.css({ width: '100%', height: 'auto', maxWidth: '100%' });
+                curW = $img.width();
+                $wL.text(curW + 'px');
+            });
 
-            var $imgLink = this.btn('\ud83d\udd17', '\u0631\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629 \u0628\u0631\u0627\u0628\u0637');
-            $imgLink.on('mousedown', function(e) { e.preventDefault(); self.showImageLinkPopup($img, wid); });
+            /* Border radius */
+            var curBr = parseInt($img.css('border-radius')) || 0;
+            var $brD = this.btn('\u25a1', '\u062d\u0627\u062f');
+            var $brU = this.btn('\u25cb', '\u062f\u0627\u0626\u0631\u064a');
+            $brD.on('mousedown', function(e) {
+                e.preventDefault();
+                curBr = Math.max(0, curBr - 5);
+                $img.css('border-radius', curBr + 'px');
+            });
+            $brU.on('mousedown', function(e) {
+                e.preventDefault();
+                curBr = Math.min(50, curBr + 5) ;
+                $img.css('border-radius', curBr + '%');
+            });
 
-            $bar.append($rep, s(), $wD, $wL, $wU, s(), $brD, $brL, $brU, s(), $imgLink);
+            /* Image link */
+            var $imgLink = this.btn('\ud83d\udd17', '\u0631\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629');
+            $imgLink.on('mousedown', function(e) {
+                e.preventDefault();
+                self.showImageLinkPopup($img, wid);
+            });
+
+            /* Delete image */
+            var $del = this.btn('\ud83d\uddd1', '\u062d\u0630\u0641').css({ color: '#e74c3c' });
+            $del.on('mousedown', function(e) {
+                e.preventDefault();
+                if (confirm('\u062d\u0630\u0641 \u0627\u0644\u0635\u0648\u0631\u0629\u061f')) {
+                    $img.remove();
+                    $bar.remove();
+                    self.notify('\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0635\u0648\u0631\u0629');
+                }
+            });
+
+            $bar.append($rep, s(), $wD, $wL, $wU, s(), $full, s(), $brD, $brU, s(), $imgLink, s(), $del);
             $('body').append($bar);
 
+            /* Resize handle */
+            var $handle = $('<div class="m-resize-h">').css({
+                position: 'absolute', zIndex: 999998,
+                width: '14px', height: '14px',
+                background: '#6C63FF', borderRadius: '50%',
+                cursor: 'nwse-resize',
+                top: (off.top + $img.outerHeight() - 7) + 'px',
+                left: (off.left + $img.outerWidth() - 7) + 'px',
+                border: '2px solid #fff',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+            });
+            var dragging = false, startX, startW;
+            $handle.on('mousedown', function(ev) {
+                ev.preventDefault();
+                dragging = true;
+                startX = ev.pageX;
+                startW = $img.width();
+                $(document).on('mousemove.mresize', function(mv) {
+                    if (!dragging) return;
+                    var diff = mv.pageX - startX;
+                    var nw = Math.max(20, startW + diff);
+                    $img.css({ width: nw + 'px', height: 'auto', maxWidth: '100%' });
+                    curW = nw;
+                    $wL.text(Math.round(nw) + 'px');
+                    var newOff = $img.offset();
+                    $handle.css({ top: (newOff.top + $img.outerHeight() - 7) + 'px', left: (newOff.left + $img.outerWidth() - 7) + 'px' });
+                });
+                $(document).on('mouseup.mresize', function() {
+                    dragging = false;
+                    $(document).off('mousemove.mresize mouseup.mresize');
+                });
+            });
+            $('body').append($handle);
+
+            /* Click outside to deselect */
             setTimeout(function() {
-                $(document).on('click.mimg6', function(e) {
-                    if (!$(e.target).closest('.m-img-bar').length && !$(e.target).is($img[0])) {
+                $(document).on('click.mimgsel6', function(ev) {
+                    if (!$(ev.target).closest('.m-img-bar, .m-resize-h').length && !$(ev.target).is($img)) {
                         $img.removeData('m4-isel').css('outline', 'none');
-                        $('.m-img-bar').remove(); $(document).off('click.mimg6');
+                        $bar.remove();
+                        $handle.remove();
+                        $(document).off('click.mimgsel6');
                     }
                 });
             }, 100);
@@ -843,8 +930,9 @@
             var self = this;
             $('#m-link-editor').remove();
             var $parent = $img.parent();
-            var isLinked = $parent.is('a');
-            var currentHref = isLinked ? ($parent.attr('href') || '') : '';
+            var isWrapped = $parent.is('a');
+            var href = isWrapped ? ($parent.attr('href') || '') : '';
+            var blank = isWrapped ? ($parent.attr('target') === '_blank') : true;
             var off = $img.offset();
             var IS = 'width:100%;padding:8px 12px;border:1px solid #333;border-radius:6px;background:#2a2a3e;color:#fff;font-size:13px;margin-top:4px;box-sizing:border-box;outline:none;';
 
@@ -860,18 +948,18 @@
 
             $ed.html(
                 '<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">' +
-                    '<span style="color:#6C63FF;font-size:16px;">\ud83d\udd17</span>' +
-                    '<span style="color:#6C63FF;font-weight:700;font-size:14px;">' + (isLinked ? '\u062a\u0639\u062f\u064a\u0644 \u0631\u0627\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629' : '\u0631\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629 \u0628\u0631\u0627\u0628\u0637') + '</span>' +
+                    '<span style="color:#6C63FF;font-size:16px;">\ud83d\uddbc\ufe0f</span>' +
+                    '<span style="color:#6C63FF;font-weight:700;font-size:14px;">\u0631\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629 \u0628\u0631\u0627\u0628\u0637</span>' +
                 '</div>' +
                 '<label style="color:#aaa;font-size:11px;display:block;margin-bottom:10px;">URL' +
-                    '<input type="url" id="ml-url" value="' + self.escAttr(currentHref) + '" placeholder="https://example.com" style="' + IS + '">' +
+                    '<input type="url" id="ml-url" value="' + self.escAttr(href) + '" placeholder="https://example.com" style="' + IS + '">' +
                 '</label>' +
                 '<label style="color:#aaa;font-size:11px;display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer;">' +
-                    '<input type="checkbox" id="ml-blank" checked> \u0641\u062a\u062d \u0641\u064a \u062a\u0627\u0628 \u062c\u062f\u064a\u062f' +
+                    '<input type="checkbox" id="ml-blank" ' + (blank ? 'checked' : '') + '> \u0641\u062a\u062d \u0641\u064a \u062a\u0627\u0628 \u062c\u062f\u064a\u062f' +
                 '</label>' +
                 '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
                     '<button id="ml-x" style="padding:7px 14px;border:none;border-radius:6px;background:#333;color:#fff;cursor:pointer;">\u0625\u0644\u063a\u0627\u0621</button>' +
-                    (isLinked ? '<button id="ml-del" style="padding:7px 14px;border:none;border-radius:6px;background:#e74c3c;color:#fff;cursor:pointer;">\u062d\u0630\u0641</button>' : '') +
+                    (isWrapped ? '<button id="ml-del" style="padding:7px 14px;border:none;border-radius:6px;background:#e74c3c;color:#fff;cursor:pointer;">\u0625\u0632\u0627\u0644\u0629 \u0627\u0644\u0631\u0627\u0628\u0637</button>' : '') +
                     '<button id="ml-ok" style="padding:7px 14px;border:none;border-radius:6px;background:#6C63FF;color:#fff;cursor:pointer;font-weight:600;">\u062d\u0641\u0638</button>' +
                 '</div>'
             );
@@ -883,23 +971,26 @@
                 var url = $ed.find('#ml-url').val().trim();
                 var bl = $ed.find('#ml-blank').is(':checked');
                 if (!url) { self.notify('\u26a0\ufe0f \u0623\u062f\u062e\u0644 \u0631\u0627\u0628\u0637'); return; }
-                if (isLinked) {
+                if (isWrapped) {
                     $parent.attr('href', url);
                     if (bl) $parent.attr('target', '_blank').attr('rel', 'noopener noreferrer');
                     else $parent.removeAttr('target').removeAttr('rel');
                 } else {
                     var $a = $('<a>').attr('href', url);
                     if (bl) $a.attr('target', '_blank').attr('rel', 'noopener noreferrer');
-                    $img.wrap($a);
+                    $img.before($a);
+                    $a.append($img);
                 }
                 $ed.remove();
-                self.notify('\ud83d\udd17 \u062a\u0645 \u0627\u0644\u062d\u0641\u0638!');
+                self.notify('\ud83d\udd17 \u062a\u0645 \u0631\u0628\u0637 \u0627\u0644\u0635\u0648\u0631\u0629!');
             });
 
-            if (isLinked) {
+            if (isWrapped) {
                 $ed.find('#ml-del').on('click', function() {
-                    $img.unwrap('a'); $ed.remove();
-                    self.notify('\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0631\u0627\u0628\u0637');
+                    $parent.before($img);
+                    $parent.remove();
+                    $ed.remove();
+                    self.notify('\u062a\u0645 \u0625\u0632\u0627\u0644\u0629 \u0627\u0644\u0631\u0627\u0628\u0637');
                 });
             }
 
@@ -914,125 +1005,179 @@
 
         setupBoxes: function($w, wid) {
             var self = this;
-            $w.find('div, section').each(function() {
-                var $box = $(this);
-                if ($box.hasClass('momentum-html-output') || $box.hasClass('m-badge') || $box.hasClass('m-notify')) return;
-                if ($box.data('m4-box')) return;
-                $box.data('m4-box', true);
-                $box.on('contextmenu.m6', function(e) {
-                    e.preventDefault(); e.stopPropagation();
-                    self.selectBox($(this), wid, e);
+            var boxTags = ['div', 'section', 'article', 'aside', 'header', 'footer', 'nav', 'main', 'figure', 'figcaption', 'blockquote', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'form', 'fieldset', 'details', 'summary'];
+
+            $w.find('*').each(function() {
+                var el = this;
+                var $el = $(this);
+                var tag = (el.tagName || '').toLowerCase();
+                if (boxTags.indexOf(tag) === -1) return;
+                if ($el.hasClass('m-badge') || $el.closest('#m-toolbar, #m-link-editor, .m-img-bar, .m-box-bar').length) return;
+                if ($el.data('m4-box')) return;
+
+                $el.data('m4-box', true);
+
+                $el.on('contextmenu.m6', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    self.selectBox($(this), wid);
                 });
             });
         },
 
-        selectBox: function($box, wid, e) {
+        selectBox: function($box, wid) {
             var self = this;
             $('[data-m4-bsel]').removeData('m4-bsel').css('outline', 'none');
             $('.m-box-bar').remove();
+            this.hideToolbar();
+
             $box.data('m4-bsel', true);
-            $box.css({ outline: '2px solid #4CAF50', outlineOffset: '2px' });
+            $box.css({ outline: '2px dashed #4CAF50', outlineOffset: '2px' });
+
+            var off = $box.offset();
+            var tag = ($box.prop('tagName') || '').toLowerCase();
+            var s = function() { return self.sep(); };
 
             var $bar = $('<div class="m-box-bar">').css({
                 position: 'absolute', zIndex: 999999,
-                top: (e.pageY + 5) + 'px', left: (e.pageX + 5) + 'px',
-                background: '#1a1a2e', borderRadius: '10px', padding: '8px',
+                top: Math.max(5, off.top - 42) + 'px',
+                left: Math.max(10, off.left) + 'px',
+                background: '#1a1a2e', borderRadius: '10px', padding: '5px 8px',
+                display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                border: '1px solid rgba(76,175,80,0.3)',
-                fontFamily: 'sans-serif', minWidth: '200px'
-            }).on('mousedown', function(ev) { ev.stopPropagation(); });
+                border: '1px solid rgba(76,175,80,0.4)'
+            }).on('mousedown', function(e) { e.preventDefault(); });
 
-            var mItem = function(label, icon, fn) {
-                return $('<div>').css({
-                    color: '#fff', fontSize: '12px', padding: '6px 10px',
-                    borderRadius: '6px', cursor: 'pointer', display: 'flex',
-                    alignItems: 'center', gap: '8px', transition: 'background 0.15s'
-                }).html('<span style="font-size:14px;">' + icon + '</span> ' + label)
-                .on('mouseenter', function() { $(this).css('background', '#2a2a3e'); })
-                .on('mouseleave', function() { $(this).css('background', 'transparent'); })
-                .on('click', function() { fn(); $bar.remove(); $box.removeData('m4-bsel').css('outline', 'none'); });
-            };
+            var $tagLabel = $('<span>').css({
+                color: '#4CAF50', fontSize: '10px', fontFamily: 'monospace',
+                background: 'rgba(76,175,80,0.15)', padding: '2px 8px',
+                borderRadius: '4px'
+            }).text('<' + tag + '>');
 
-            $bar.append(mItem('\u0644\u0648\u0646 \u0627\u0644\u062e\u0644\u0641\u064a\u0629', '\ud83c\udfa8', function() {
-                var $input = $('<input type="color" value="' + (self.rgbToHex($box.css('background-color') || '#ffffff')) + '">').css({ position: 'fixed', top: '-100px' });
-                $('body').append($input);
-                $input.on('input', function() { $box.css('background-color', $(this).val()); });
-                $input.on('change', function() { $(this).remove(); });
-                $input[0].click();
-            }));
+            /* Background color */
+            var $bgLabel = $('<span>').css({ color: '#aaa', fontSize: '10px' }).text('\u062e\u0644\u0641\u064a\u0629');
+            var $bgPick = $('<input type="color">').val(self.rgbToHex($box.css('background-color') || '#ffffff')).css({
+                width: '28px', height: '24px', border: 'none', borderRadius: '4px',
+                cursor: 'pointer', background: 'transparent', padding: '0'
+            });
+            $bgPick.on('input', function() { $box.css('background-color', $(this).val()); });
 
-            $bar.append(mItem('\u0632\u064a\u0627\u062f\u0629 \u0627\u0644\u0645\u0633\u0627\u0641\u0629 \u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629', '\u2b1c', function() {
-                var p = parseInt($box.css('padding')) || 0;
-                $box.css('padding', (p + 10) + 'px');
-            }));
+            /* Padding */
+            var pd = parseInt($box.css('padding')) || 0;
+            var $pdD = self.btn('\u2212', '\u062a\u0642\u0644\u064a\u0644 \u0627\u0644\u0628\u0627\u062f\u0646\u062c');
+            var $pdL = $('<span>').css({ color: '#fff', fontSize: '10px', minWidth: '28px', textAlign: 'center', display: 'inline-block' }).text(pd + 'px');
+            var $pdU = self.btn('+', '\u0632\u064a\u0627\u062f\u0629 \u0627\u0644\u0628\u0627\u062f\u0646\u062c');
+            $pdD.on('mousedown', function(e) { e.preventDefault(); pd = Math.max(0, pd - 5); $box.css('padding', pd + 'px'); $pdL.text(pd + 'px'); });
+            $pdU.on('mousedown', function(e) { e.preventDefault(); pd = Math.min(200, pd + 5); $box.css('padding', pd + 'px'); $pdL.text(pd + 'px'); });
 
-            $bar.append(mItem('\u062a\u0642\u0644\u064a\u0644 \u0627\u0644\u0645\u0633\u0627\u0641\u0629 \u0627\u0644\u062f\u0627\u062e\u0644\u064a\u0629', '\ud83d\udd32', function() {
-                var p = parseInt($box.css('padding')) || 0;
-                $box.css('padding', Math.max(0, p - 10) + 'px');
-            }));
+            /* Margin */
+            var mg = parseInt($box.css('margin-top')) || 0;
+            var $mgD = self.btn('M\u2212', '\u062a\u0642\u0644\u064a\u0644 \u0627\u0644\u0645\u0627\u0631\u062c\u0646');
+            var $mgL = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '28px', textAlign: 'center', display: 'inline-block' }).text(mg + 'px');
+            var $mgU = self.btn('M+', '\u0632\u064a\u0627\u062f\u0629 \u0627\u0644\u0645\u0627\u0631\u062c\u0646');
+            $mgD.on('mousedown', function(e) { e.preventDefault(); mg = Math.max(0, mg - 5); $box.css('margin', mg + 'px 0'); $mgL.text(mg + 'px'); });
+            $mgU.on('mousedown', function(e) { e.preventDefault(); mg = Math.min(200, mg + 5); $box.css('margin', mg + 'px 0'); $mgL.text(mg + 'px'); });
 
-            $bar.append(mItem('\u062d\u0648\u0627\u0641 \u062f\u0627\u0626\u0631\u064a\u0629', '\u25ef', function() {
-                var brd = parseInt($box.css('border-radius')) || 0;
-                $box.css('border-radius', (brd + 8) + 'px');
-            }));
+            /* Border radius */
+            var br = parseInt($box.css('border-radius')) || 0;
+            var $brD = self.btn('\u25a1', '\u062d\u0627\u062f');
+            var $brL = $('<span>').css({ color: '#aaa', fontSize: '10px', minWidth: '24px', textAlign: 'center', display: 'inline-block' }).text(br);
+            var $brU = self.btn('\u25cb', '\u0645\u0633\u062a\u062f\u064a\u0631');
+            $brD.on('mousedown', function(e) { e.preventDefault(); br = Math.max(0, br - 5); $box.css('border-radius', br + 'px'); $brL.text(br); });
+            $brU.on('mousedown', function(e) { e.preventDefault(); br = Math.min(100, br + 5); $box.css('border-radius', br + 'px'); $brL.text(br); });
 
-            $bar.append(mItem('\u0625\u0636\u0627\u0641\u0629 \u0628\u0648\u0631\u062f\u0631', '\ud83d\udd33', function() {
-                $box.css('border', '1px solid #ddd');
-            }));
+            /* Border */
+            var $border = self.btn('\u25a3', '\u0625\u0637\u0627\u0631');
+            $border.on('mousedown', function(e) {
+                e.preventDefault();
+                var current = $box.css('border');
+                if (current && current.indexOf('none') === -1 && current.indexOf('0px') === -1) {
+                    $box.css('border', 'none');
+                } else {
+                    $box.css('border', '1px solid #ddd');
+                }
+            });
 
-            $bar.append(mItem('\u0625\u0632\u0627\u0644\u0629 \u0627\u0644\u0628\u0648\u0631\u062f\u0631', '\u2715', function() {
-                $box.css('border', 'none');
-            }));
+            /* Hide/Show */
+            var $vis = self.btn('\ud83d\udc41', '\u0625\u062e\u0641\u0627\u0621/\u0625\u0638\u0647\u0627\u0631');
+            $vis.on('mousedown', function(e) {
+                e.preventDefault();
+                if ($box.css('display') === 'none') {
+                    $box.css('display', '');
+                    self.notify('\u062a\u0645 \u0625\u0638\u0647\u0627\u0631 \u0627\u0644\u0639\u0646\u0635\u0631');
+                } else {
+                    $box.css('display', 'none');
+                    $bar.remove();
+                    self.notify('\u062a\u0645 \u0625\u062e\u0641\u0627\u0621 \u0627\u0644\u0639\u0646\u0635\u0631');
+                }
+            });
 
-            var tag = ($box.prop('tagName') || '').toLowerCase();
-            $bar.append($('<div>').css({
-                color: '#4CAF50', fontSize: '9px', fontFamily: 'monospace',
-                textAlign: 'center', padding: '4px', marginTop: '4px', borderTop: '1px solid #333'
-            }).text('<' + tag + '>'));
+            /* Delete */
+            var $del = self.btn('\ud83d\uddd1', '\u062d\u0630\u0641').css({ color: '#e74c3c' });
+            $del.on('mousedown', function(e) {
+                e.preventDefault();
+                if (confirm('\u062d\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0639\u0646\u0635\u0631\u061f')) {
+                    $box.remove();
+                    $bar.remove();
+                    self.notify('\u062a\u0645 \u062d\u0630\u0641 \u0627\u0644\u0639\u0646\u0635\u0631');
+                }
+            });
 
+            $bar.append($tagLabel, s(), $bgLabel, $bgPick, s(), $pdD, $pdL, $pdU, s(), $mgD, $mgL, $mgU, s(), $brD, $brL, $brU, s(), $border, s(), $vis, s(), $del);
             $('body').append($bar);
+
+            /* Click outside to deselect */
             setTimeout(function() {
-                $(document).on('click.mbox6', function(ev) {
-                    if (!$(ev.target).closest('.m-box-bar').length) {
+                $(document).on('click.mboxsel6', function(ev) {
+                    if (!$(ev.target).closest('.m-box-bar').length && !$(ev.target).is($box) && !$box.find(ev.target).length) {
                         $box.removeData('m4-bsel').css('outline', 'none');
-                        $('.m-box-bar').remove(); $(document).off('click.mbox6');
+                        $bar.remove();
+                        $(document).off('click.mboxsel6');
                     }
                 });
             }, 100);
         },
 
+        /* ===== UTILITY FUNCTIONS ===== */
+
         btn: function(label, title, active) {
-            var bg = active ? '#6C63FF' : '#2a2a3e';
-            return $('<span>').css({
+            var $b = $('<span>').css({
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                minWidth: '26px', height: '24px', background: bg,
-                color: '#fff', fontSize: '11px', borderRadius: '4px',
-                cursor: 'pointer', padding: '0 4px', transition: 'background 0.15s',
-                userSelect: 'none', fontFamily: 'sans-serif'
-            }).text(label).attr('title', title || '')
-            .on('mouseenter', function() { if (!active) $(this).css('background', '#3a3a5e'); })
-            .on('mouseleave', function() { if (!active) $(this).css('background', bg); });
+                minWidth: '26px', height: '26px', padding: '0 6px',
+                borderRadius: '6px', cursor: 'pointer',
+                fontSize: '12px', fontFamily: 'sans-serif', fontWeight: '600',
+                color: '#ddd', background: active ? '#6C63FF' : '#2a2a3e',
+                border: '1px solid transparent',
+                transition: 'all 0.15s',
+                userSelect: 'none', whiteSpace: 'nowrap'
+            }).text(label).attr('title', title || '');
+            $b.on('mouseenter', function() { $(this).css({ background: active ? '#7c73ff' : '#3a3a5e', borderColor: 'rgba(108,99,255,0.4)' }); });
+            $b.on('mouseleave', function() { $(this).css({ background: active ? '#6C63FF' : '#2a2a3e', borderColor: 'transparent' }); });
+            return $b;
         },
 
         sep: function() {
             return $('<span>').css({
-                width: '1px', height: '18px', background: '#333',
-                display: 'inline-block', margin: '0 2px'
+                display: 'inline-block', width: '1px', height: '20px',
+                background: '#333', margin: '0 2px', flexShrink: '0'
             });
         },
 
         notify: function(msg) {
             $('.m-notify').remove();
             var $n = $('<div class="m-notify">').css({
-                position: 'fixed', bottom: '20px', left: '50%',
-                transform: 'translateX(-50%)', background: '#1a1a2e',
-                color: '#fff', padding: '10px 20px', borderRadius: '8px',
-                fontSize: '13px', fontFamily: 'sans-serif', zIndex: 999999,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-                border: '1px solid rgba(108,99,255,0.3)'
+                position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+                background: '#1a1a2e', color: '#fff', padding: '12px 24px',
+                borderRadius: '12px', fontSize: '14px', fontFamily: 'sans-serif',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                border: '1px solid rgba(108,99,255,0.3)',
+                zIndex: 9999999, whiteSpace: 'nowrap',
+                animation: 'none', opacity: '1',
+                transition: 'opacity 0.3s'
             }).text(msg);
             $('body').append($n);
-            setTimeout(function() { $n.fadeOut(300, function() { $(this).remove(); }); }, 2500);
+            setTimeout(function() { $n.css('opacity', '0'); }, 2500);
+            setTimeout(function() { $n.remove(); }, 3000);
         },
 
         rgbToHex: function(rgb) {
@@ -1041,32 +1186,57 @@
             try {
                 var parts = rgb.match(/\d+/g);
                 if (!parts || parts.length < 3) return '#333333';
-                var hex = '#';
-                for (var i = 0; i < 3; i++) hex += ('0' + parseInt(parts[i]).toString(16)).slice(-2);
-                return hex;
-            } catch(e) { return '#333333'; }
+                var r = parseInt(parts[0]);
+                var g = parseInt(parts[1]);
+                var b = parseInt(parts[2]);
+                return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            } catch(e) {
+                return '#333333';
+            }
         },
 
         escAttr: function(str) {
-            return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         },
 
         escHtml: function(str) {
-            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
     };
 
-    $(document).ready(function() { M.tryInit(); });
+    /* ===== BOOTSTRAP ===== */
 
+    $(function() {
+        setTimeout(function() { M.tryInit(); }, 300);
+    });
+
+    /* Elementor hooks */
     $(window).on('elementor/frontend/init', function() {
-        if (typeof elementorFrontend !== 'undefined' && typeof elementorFrontend.hooks !== 'undefined') {
-            elementorFrontend.hooks.addAction('frontend/element_ready/momentum_html_pro.default', function() {
-                setTimeout(function() { M.setup(); }, 500);
+        if (typeof elementorFrontend !== 'undefined' && elementorFrontend.hooks) {
+            elementorFrontend.hooks.addAction('frontend/element_ready/global', function() {
+                setTimeout(function() { M.tryInit(); }, 500);
+            });
+            elementorFrontend.hooks.addAction('frontend/element_ready/momentum-html-pro.default', function($scope) {
+                setTimeout(function() { M.tryInit(); }, 500);
             });
         }
     });
 
-    setTimeout(function() { M.tryInit(); }, 2000);
-    setTimeout(function() { M.tryInit(); }, 5000);
+    /* Fallback: periodic check */
+    var _fallbackCount = 0;
+    var _fallbackInterval = setInterval(function() {
+        _fallbackCount++;
+        if (M.ready || _fallbackCount > 60) {
+            clearInterval(_fallbackInterval);
+            return;
+        }
+        try {
+            if ($('.momentum-html-output.momentum-editable').length > 0 && !M.ready) {
+                M.tryInit();
+            }
+        } catch(e) {}
+    }, 1000);
 
 })(jQuery);
